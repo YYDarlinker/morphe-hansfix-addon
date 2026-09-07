@@ -1,13 +1,25 @@
-# 发布门槛
+# 公开发布与回归门槛
 
-当前仅私有准备仓库，根 patches-bundle.json 故意不存在，没有release。不要现在把仓库当作可用源添加。
+用户已于2026-09-07提供干净原包和Manager 1.29.0截图，并授权验证后按Morphe要求公开源码和发布源。专家模式“官方＋独立addon同Session”不变。
 
-正式发布后，用户保留官方源，在专家模式同时选择官方所需功能和本源的 HansFix；不能勾选另一个完整fork来替代官方源。
+## 发布前
 
-普通 GitHub 地址会被 Manager 解析为 main/patches-bundle.json，再读取其 download_url。不是自动搜索最新Release。正式manifest需有 created_at、description、download_url、version，其他字段依当前Manager DTO。
+- JDK21纯Java运行时测试通过；生产Kotlin/extension构建通过且runtime仅自有namespace。
+- 精确原包/官方包哈希已验证；使用两个独立bundle加载入口进入同一个Patcher实例。
+- 最小官方Captions组合、官方默认兼容组合、逆序输入组合能实际生成APK；缺官方源明确失败。
+- 对输出核对bridge、同寄存器网络改写、4行UI和2摘要hook、模型字段不变、无重复class；对照官方-only结果分析任何非预期差异。
+- index及公开历史无私有材料，工作区/源码提交状态清楚。
 
-私有仓库不能作为匿名可下载的普通raw源。准备阶段先私有保存；正式源需审计后确认公开，并提供可公开下载的.mpp，或另行选择明确可访问的托管方式。
+首版在 dev 通道预发布，并提供明确的 dev manifest 地址；稳定通道不提前宣称通过。手机安装、菜单打开和播放属于单独的运行态验收。发布说明必须如实标明该证据边界，不能把本地合成成功或旧手工APK的成功冒充新手机验收。
 
-发布前必须完成：独立addon实现 → 干净原包的官方＋addon同Session测试 → 用户新产物验收 → 隐私和源码审计 → 正式公开确认 → 按官方模板semantic-release维护main/dev manifest及release → 验证实际Manager双源加载。
+## 原生发布
 
-上游release配置保存在docs/template-reference中。以后基于官方原生流程调整，不用手工造一个下载URL或把手工APK冒充.mpp。无功能的准备bundle不上传为Release。
+使用恢复自官方模板的`.releaserc`和release workflow。安全检查、Python tests、JDK21 runtime tests先执行；之后由semantic-release计算版本并生成manifest、补丁列表、README、tag及当前版本`.mpp`。
+
+- dev：预发布，Manager需开启该源预发布。
+- main：正式通道。
+- manifest必须指向本仓库相同版本的release `.mpp`，不能指向官方包或测试APK。
+- 只开放干净源码和补丁包；用户APK签名在其Manager本地完成，不使用仓库或CI中的用户私钥。
+- 当前CI只使用GITHUB_TOKEN，不引入用户APK/签名/会话secret。
+
+发布后核验公开可读的manifest、版本/asset/hash、Morphe元数据解析与远程下载的bundle内容。正式功能状态看当前根manifest和release，不看历史准备记录。

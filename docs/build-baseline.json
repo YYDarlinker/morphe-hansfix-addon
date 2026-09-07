@@ -19,5 +19,6 @@
   "warnings": [
     "SDK XML version warning observed during initial baseline build; no build failure",
     "Deprecated Gradle APIs; do not upgrade beyond the pinned stack without testing"
-  ]
+  ],
+  "historical_preparation_snapshot": true
 }

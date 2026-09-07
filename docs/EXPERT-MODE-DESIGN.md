@@ -10,7 +10,7 @@
 - BytecodePatch 的 extension 在该 patch execute 之前合并。
 - 同名 class 进入实验性 ClassMerger；它不是有明确覆盖保证的“后一源替换前一源方法”机制。
 
-## 待验证的实现方向
+## 已落实的实现方向（组合与输出验证另行记录）
 
 1. addon 只打包独立 Java runtime，不复制官方 Cookie/Settings 类或整个官方库。
 2. execute阶段准备自身扩展和必要输入检查；finalize阶段重新解析当前 mutable bytecode，而不使用 execute前缓存的指令下标。
@@ -21,7 +21,7 @@
 7. 仍要检查其他官方 finalize 是否继续修改相关方法。不能把“所有execute已完成”误说成“所有其他操作已完成”。
 8. 用两个独立bundle的真实Session验证源/选中patch输入顺序变化。不要用同一个Kotlin工程里的两个函数测试冒充多ClassLoader整合测试。
 
-以上只是可行的候选设计；桥接、指纹、hook和双源运行均未实施或验收。
+以上已落实为当前Kotlin patch和独立Java runtime。最小/默认兼容组合及逆序输入已有同Session成功记录；完整输出对照与当前发布结果见验证记录，手机UI/播放不冒充已验收。
 
 ## 固定源码依据
 

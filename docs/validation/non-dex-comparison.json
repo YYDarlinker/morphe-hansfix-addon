@@ -1,0 +1,26 @@
+[
+  {
+    "candidate": "minimal",
+    "baseline": "official-only",
+    "entry_set_equal": true,
+    "changed_non_dex_entries": [],
+    "added": [],
+    "removed": []
+  },
+  {
+    "candidate": "defaults",
+    "baseline": "official-defaults",
+    "entry_set_equal": true,
+    "changed_non_dex_entries": [],
+    "added": [],
+    "removed": []
+  },
+  {
+    "candidate": "reverse",
+    "baseline": "minimal",
+    "entry_set_equal": true,
+    "changed_non_dex_entries": [],
+    "added": [],
+    "removed": []
+  }
+]

@@ -1,0 +1,40 @@
+{
+  "status": "LOCAL_SAME_SESSION_AND_DEX_AUDITS_PASSED",
+  "checked_at": "2026-09-07T18:13:14.104042+08:00",
+  "manager_user_version": "1.29.0",
+  "patcher_version": "1.12.0",
+  "bytecode_mode": "STRIP_FAST (Manager default)",
+  "official_bundle_version": "1.41.0",
+  "input_sha256": "afed0724c7cbdec08626573f5e0c405db76e11fe9bfdafbc3884690a766666db",
+  "official_mpp_sha256": "679a86aaaa50572e9c0852fd990e937edfd9b616ecf5d350048458598ec785df",
+  "validated_addon_mpp_sha256": "480bbddc2122ee9f47d0866535df66d177954053e8f62d0936aeb50039f707bd",
+  "runtime_assertions_passed": 10401,
+  "python_checks_passed": 45,
+  "modes": [
+    {
+      "mode": "minimal",
+      "status": "STRUCTURE_PASS_NO_UNEXPLAINED_DEX_CHANGES",
+      "output_sha256": "6fd5dc3d5ee58016973e572ec80733a0c24dd06ebb277ad3cbf93c722fca6760"
+    },
+    {
+      "mode": "defaults",
+      "status": "STRUCTURE_PASS_NO_UNEXPLAINED_DEX_CHANGES",
+      "output_sha256": "668d017363042f44995d5cd4a94e0f14397c9abcab55ff26d77d0d7573978668"
+    },
+    {
+      "mode": "reverse",
+      "status": "STRUCTURE_PASS_NO_UNEXPLAINED_DEX_CHANGES",
+      "output_sha256": "a136f1c2938160b0b62e230449141e46bc1a9d1190a4749d6192afd1de3dbf81"
+    }
+  ],
+  "official_default_roots": 80,
+  "addon_roots": 1,
+  "default_dependency_closure_count": 193,
+  "missing_official_source": "EXPECTED_FAILURE_NO_APK",
+  "reverse_semantic_difference": "only official PATCH_TIME metadata",
+  "non_dex_differences": 0,
+  "independent_jar_loaders_in_one_patcher": true,
+  "phone_manager_ui_test_run": false,
+  "new_phone_playback_test_run": false,
+  "publication_channel": "dev prerelease pending native release workflow"
+}

@@ -1,0 +1,96 @@
+name: Release
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+permissions:
+  contents: read
+# Serialize main/dev as native backmerge also updates dev. Never cancel a publish.
+concurrency:
+  group: hansfix-native-release
+  cancel-in-progress: false
+jobs:
+  checks:
+    name: Release safety gates
+    if: >-
+      github.repository == 'YYDarlinker/morphe-hansfix-addon' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+      - name: Setup Java
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Inspect exact source index
+        run: python tools/check_publish_safety.py
+      - name: Python safety and production contracts
+        run: python -B -m unittest discover -s tests -p "test*.py"
+      - name: Standalone Java runtime tests (JDK 21; no user APK)
+        run: python tools/run_runtime_tests.py --jdk "$JAVA_HOME"
+  release:
+    name: Native Morphe semantic-release
+    needs: checks
+    if: >-
+      github.repository == 'YYDarlinker/morphe-hansfix-addon' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout full release history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+      - name: Setup Java
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+          cache: 'npm'
+      - name: Install locked dependencies
+        run: npm ci
+      # Gradle plugin updates version in prepare and runs publish in publish.
+      # The exec prepare step builds Android, generates metadata and audits it
+      # before the native git/github plugins commit, tag or upload anything.
+      - name: Release
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6
+        id: release
+        with:
+          semantic_version: '25.0.9'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Attest
+        if: steps.release.outputs.new_release_published == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: 'Morphe Patches ${{ steps.release.outputs.new_release_git_tag }}'
+          subject-path: patches/build/libs/patches-${{ steps.release.outputs.new_release_version }}.mpp
+      - name: Verify project compiles when no release is needed
+        if: steps.release.outputs.new_release_published != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :patches:buildAndroid --no-daemon
