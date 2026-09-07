@@ -51,7 +51,22 @@ python tools/check_publish_safety.py
 ## 补丁列表
 
 <!-- PATCHES_START EXPANDED -->
-补丁列表由首次原生发布自动生成。
+> **[v1.0.0-dev.1](https://github.com/YYDarlinker/morphe-hansfix-addon/releases/tag/v1.0.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;1 patches total
+<details open>
+<summary>📦 YouTube&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
+<br>
+
+**🎯 Supported versions:**
+
+| 21.07.247 |
+| :---: |
+
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| [HansFix - Simplified Chinese captions](#hansfix-simplified-chinese-captions) | Use with official Captions in expert mode. Maps Traditional auto-translation to Simplified and changes UI labels only. YouTube 21.07.247 (1561056418). |  |
+
+</details>
+
 <!-- PATCHES_END -->
 
 ## 来源和安全

@@ -1,0 +1,7 @@
+{
+  "created_at": "2026-09-07T10:20:20",
+  "description": "## 1.0.0-dev.1 (2026-09-07)\n\n### ✨ New Features\n\n* add simplified caption compatibility for expert-mode official co-patching ([e87b846](https://github.com/YYDarlinker/morphe-hansfix-addon/commit/e87b846dbfadcb39628829baac95779924c9531f))",
+  "download_url": "https://github.com/YYDarlinker/morphe-hansfix-addon/releases/download/v1.0.0-dev.1/patches-1.0.0-dev.1.mpp",
+  "signature_download_url": "",
+  "version": "1.0.0-dev.1"
+}
