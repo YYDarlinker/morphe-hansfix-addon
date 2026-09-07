@@ -1,0 +1,217 @@
+{
+  "upstream": "MorpheApp/morphe-patches-template",
+  "commit": "268367a3553642bd6adb4ac3a5f8c4feffc4b326",
+  "files": [
+    {
+      "upstream_path": ".editorconfig",
+      "local_path": ".editorconfig",
+      "sha256": "fe59485c699abf3a74665b2db9d06439a65a585b08c49ddb17b48e443a8ddc52",
+      "bytes": 95
+    },
+    {
+      "upstream_path": ".gitattributes",
+      "local_path": ".gitattributes",
+      "sha256": "168f60b28bfc7530b82e44d174372ebda4089dd1f1acb9a564b9532bc8aa49b4",
+      "bytes": 223
+    },
+    {
+      "upstream_path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "local_path": "docs/template-reference/.github/ISSUE_TEMPLATE/bug_report.yml",
+      "sha256": "78f2b24514a059188041379582d3dea6993531b52b2942332d62140bb01106ed",
+      "bytes": 1904
+    },
+    {
+      "upstream_path": ".github/ISSUE_TEMPLATE/config.yml",
+      "local_path": "docs/template-reference/.github/ISSUE_TEMPLATE/config.yml",
+      "sha256": "d6d81427cbfd6fb2c87462698c241fd6c31e47025c137498e50b8a01b228cb95",
+      "bytes": 29
+    },
+    {
+      "upstream_path": ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "local_path": "docs/template-reference/.github/ISSUE_TEMPLATE/feature_request.yml",
+      "sha256": "dbec2c2f2ee6791af41e979edeb5bda37c01b3be76a8bc8059b713bceaf2e5d2",
+      "bytes": 1849
+    },
+    {
+      "upstream_path": ".github/dependabot.yml",
+      "local_path": "docs/template-reference/.github/dependabot.yml",
+      "sha256": "9ba77ac186561d6b113f4f5b7b84ee187e6e934bac7acdfa569b5586101b0c8e",
+      "bytes": 661
+    },
+    {
+      "upstream_path": ".github/scripts/generate_patches_readme.py",
+      "local_path": "docs/template-reference/.github/scripts/generate_patches_readme.py",
+      "sha256": "914fa0f4f2bd6aa23e61119b50485bc1b9c0490ea1ea0a3e8b88e19ca53caf9b",
+      "bytes": 7930
+    },
+    {
+      "upstream_path": ".github/workflows/open_pull_request.yml",
+      "local_path": "docs/template-reference/.github/workflows/open_pull_request.yml",
+      "sha256": "1133f7089ade76b0a242c2fafe63f47a3bde2dd1e8de86e9169ff97170bd767d",
+      "bytes": 1709
+    },
+    {
+      "upstream_path": ".github/workflows/release.yml",
+      "local_path": "docs/template-reference/.github/workflows/release.yml",
+      "sha256": "8071d45f7d06fc0e277896616c0bad8050e50be99ed7ec3bcf0749f0687c7aef",
+      "bytes": 1716
+    },
+    {
+      "upstream_path": ".gitignore",
+      "local_path": ".gitignore",
+      "sha256": "24d1a5d057c01f2b1fc3677a68328986a0f19790369508e6188d13a2164b6f7f",
+      "bytes": 2519
+    },
+    {
+      "upstream_path": ".releaserc",
+      "local_path": "docs/template-reference/.releaserc",
+      "sha256": "be99652c065dff5bb03114ce792588137a07e827120ab5e516015bbe477ae6b3",
+      "bytes": 2623
+    },
+    {
+      "upstream_path": "CHANGELOG.md",
+      "local_path": "docs/template-reference/CHANGELOG.md",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "upstream_path": "LICENSE",
+      "local_path": "LICENSE",
+      "sha256": "230184f60bae2feaf244f10a8bac053c8ff33a183bcc365b4d8b876d2b7f4809",
+      "bytes": 35823
+    },
+    {
+      "upstream_path": "NOTICE",
+      "local_path": "NOTICE",
+      "sha256": "fca3db575c0e22696864f3028fd5f6d5e667bcfada5d85c50d9345597be1ba6a",
+      "bytes": 894
+    },
+    {
+      "upstream_path": "README.md",
+      "local_path": "docs/template-reference/README.md",
+      "sha256": "e62f3675052a9e8d6e9e36e88c7087fc3b3db0e40f6a4ab2caae47638caea7e1",
+      "bytes": 5218
+    },
+    {
+      "upstream_path": "extensions/extension/build.gradle.kts",
+      "local_path": "extensions/extension/build.gradle.kts",
+      "sha256": "6ef998b7348ca993b82f46bc5f45a018b998c3bdccc7db0901e2640718011067",
+      "bytes": 113
+    },
+    {
+      "upstream_path": "extensions/extension/src/main/AndroidManifest.xml",
+      "local_path": "extensions/extension/src/main/AndroidManifest.xml",
+      "sha256": "6ffce38a2b1abc5f552b2114873ae38f67de915ca64e5a123e322c4821a552b0",
+      "bytes": 13
+    },
+    {
+      "upstream_path": "extensions/extension/src/main/java/app/template/extension/extension/ExamplePatch.java",
+      "local_path": "docs/template-reference/extensions/extension/src/main/java/app/template/extension/extension/ExamplePatch.java",
+      "sha256": "0c6f3e0b37d14837f80259fa218b8bb25a5df75af8170a3b0afcf75ac1942faf",
+      "bytes": 321
+    },
+    {
+      "upstream_path": "gradle.properties",
+      "local_path": "gradle.properties",
+      "sha256": "97471ee0a040e54acc2514c108da3508f179e4c4ba72a93bff9991d9977e62c9",
+      "bytes": 102
+    },
+    {
+      "upstream_path": "gradle/libs.versions.toml",
+      "local_path": "gradle/libs.versions.toml",
+      "sha256": "aa03e4bbcf5b737f99b706a7579abda20d4b31fa86bc4b28d07a781affb0bd0b",
+      "bytes": 196
+    },
+    {
+      "upstream_path": "gradle/wrapper/gradle-wrapper.jar",
+      "local_path": "gradle/wrapper/gradle-wrapper.jar",
+      "sha256": "7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d",
+      "bytes": 47505
+    },
+    {
+      "upstream_path": "gradle/wrapper/gradle-wrapper.properties",
+      "local_path": "gradle/wrapper/gradle-wrapper.properties",
+      "sha256": "2f0688676954b3db3c0aa1dd6d45a1823e6224672e4818df9a5c524a6afabe62",
+      "bytes": 378
+    },
+    {
+      "upstream_path": "gradlew",
+      "local_path": "gradlew",
+      "sha256": "a5a5c199ba02189ae8c46a334223371a20599d9c298ef65e7540ede4a3f72d59",
+      "bytes": 8656
+    },
+    {
+      "upstream_path": "gradlew.bat",
+      "local_path": "gradlew.bat",
+      "sha256": "d539676c48b596afda64c963ec8f7ee56c7b3fe7e3b81d1dbe2d1a1e3dd9e9f8",
+      "bytes": 2848
+    },
+    {
+      "upstream_path": "package-lock.json",
+      "local_path": "package-lock.json",
+      "sha256": "82540bec62416fd80e777eff45a3802d1243ddcb3795e12ed5452f8ac7bd645d",
+      "bytes": 197183
+    },
+    {
+      "upstream_path": "package.json",
+      "local_path": "package.json",
+      "sha256": "9668fff161bf1563fd98e243f1fa494af8db67dc428667463dc02f33fcc609e9",
+      "bytes": 407
+    },
+    {
+      "upstream_path": "patches-bundle.json",
+      "local_path": "docs/template-reference/patches-bundle.json",
+      "sha256": "42c3bc47345fe51da08a041c230ba54444aab66a0ae59836a5cb355d9a38e26b",
+      "bytes": 122
+    },
+    {
+      "upstream_path": "patches-list.json",
+      "local_path": "docs/template-reference/patches-list.json",
+      "sha256": "b38302077b2f1c2ba6f1793e3689fea24259b9edd26314f6ae5b2028a30ee72f",
+      "bytes": 266
+    },
+    {
+      "upstream_path": "patches/build.gradle.kts",
+      "local_path": "patches/build.gradle.kts",
+      "sha256": "f080a694de1c7460245e6187db2ff1511407a84caa5672c2717ce63af3892b28",
+      "bytes": 1090
+    },
+    {
+      "upstream_path": "patches/src/main/kotlin/app/template/patches/example/ExamplePatch.kt",
+      "local_path": "docs/template-reference/patches/src/main/kotlin/app/template/patches/example/ExamplePatch.kt",
+      "sha256": "ec15a47196c299a0d2747b28c5980bf3f84fb1703e10a9e88da3a53fdbebdb63",
+      "bytes": 922
+    },
+    {
+      "upstream_path": "patches/src/main/kotlin/app/template/patches/example/Fingerprints.kt",
+      "local_path": "docs/template-reference/patches/src/main/kotlin/app/template/patches/example/Fingerprints.kt",
+      "sha256": "d996c27308705afd5aeb7d4119c184c5fce5fc9984dc566f0fd796d7f89682fc",
+      "bytes": 2947
+    },
+    {
+      "upstream_path": "patches/src/main/kotlin/app/template/patches/example/InternalPatch.kt",
+      "local_path": "docs/template-reference/patches/src/main/kotlin/app/template/patches/example/InternalPatch.kt",
+      "sha256": "c0deb82be6b2134df82a93e5ce16a68e37559036147a51d3c024914c8a4bd569",
+      "bytes": 964
+    },
+    {
+      "upstream_path": "patches/src/main/kotlin/app/template/patches/shared/Constants.kt",
+      "local_path": "docs/template-reference/patches/src/main/kotlin/app/template/patches/shared/Constants.kt",
+      "sha256": "b730b9fe82f19aa70ade9ae3c75f2a079b7e3e7fac959edb96e7aa1869c6fb6d",
+      "bytes": 3323
+    },
+    {
+      "upstream_path": "patches/src/main/kotlin/util/PatchListGenerator.kt",
+      "local_path": "patches/src/main/kotlin/util/PatchListGenerator.kt",
+      "sha256": "809a6e91c8f00bc597e2cc2c46fc7ec3dadbe79b3fd6593419ea9665b3ec8d41",
+      "bytes": 5765
+    },
+    {
+      "upstream_path": "settings.gradle.kts",
+      "local_path": "settings.gradle.kts",
+      "sha256": "b7749a741dab1525b2037f34ea82a6f175ed78edc3bba3bb2c219ccdc62c333a",
+      "bytes": 649
+    }
+  ],
+  "text_normalization": "Preparation checkout normalizes text line endings/trailing whitespace; listed hashes describe original upstream blobs."
+}

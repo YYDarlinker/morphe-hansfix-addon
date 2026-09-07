@@ -1,0 +1,23 @@
+{
+  "status": "ADDON_FOUNDATION_BUILD_PASS_NOT_FEATURE_READY",
+  "checked_at": "2026-09-07T15:28:48.522347+08:00",
+  "artifact_name": "patches-0.1.0-dev.0.mpp",
+  "artifact_bytes": 23463,
+  "sha256": "227d5a5d1590f328dff526fe1523c3d93959ebb2d6f58990baa9cad87ec0a811",
+  "clean_build_without_build_cache": "PASS",
+  "runtime_classes": 2,
+  "foreign_runtime_classes": 0,
+  "namespace_audit": "PASS",
+  "registered_hansfix_patches": 0,
+  "official_patch_code_copied": false,
+  "release_published": false,
+  "two_source_integration_test": "NOT_RUN",
+  "java": "21.0.12.1",
+  "gradle": "9.7.1",
+  "patcher": "1.12.0",
+  "tests_passed": 29,
+  "warnings": [
+    "SDK XML version warning observed during initial baseline build; no build failure",
+    "Deprecated Gradle APIs; do not upgrade beyond the pinned stack without testing"
+  ]
+}

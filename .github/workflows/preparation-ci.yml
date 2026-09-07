@@ -1,0 +1,22 @@
+name: Preparation checks only
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preparation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+      - name: Test safety and preparation contract
+        run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Inspect exact upload scope
+        run: python tools/check_publish_safety.py
