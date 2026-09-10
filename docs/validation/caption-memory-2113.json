@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-10",
+  "status": "local_combined_session_passed_device_pending",
+  "inputVersion": "21.13.164",
+  "inputVersionCode": 1561063732,
+  "inputSha256": "c193daf879d36e04886c34dcc44580b1c98c20534165d306c2a04b8025fc3f46",
+  "officialVersion": "1.42.0",
+  "patcherVersion": "1.12.0",
+  "selectedRoots": 83,
+  "dependencyClosure": 196,
+  "addonPatches": [
+    "HansFix - Simplified Chinese captions",
+    "Remember subtitle language"
+  ],
+  "outputSha256": "4468dcd41273b74a022143d9a45b8f35394ec5e150aa69632fbe2d89659cc9b3",
+  "checks": [
+    "Google input signature",
+    "bundle Android build",
+    "same-session official defaults plus both addon patches",
+    "final APK CRC and container",
+    "runtime namespace",
+    "targeted native selector and accessor hooks",
+    "model-ready branch enters injected hook",
+    "existing HansFix runtime regressions",
+    "source publish safety"
+  ],
+  "deviceAcceptance": "pending user",
+  "versionPolicy": "No exact version gate; unique structures required"
+}
