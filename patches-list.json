@@ -1,12 +1,14 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.0-dev.1",
+  "version": "1.0.0-dev.2",
   "patches": [
     {
       "name": "HansFix - Simplified Chinese captions",
-      "description": "Use with official Captions in expert mode. Maps Traditional auto-translation to Simplified and changes UI labels only. YouTube 21.07.247 (1561056418).",
+      "description": "Use with official Captions in expert mode. Maps Traditional auto-translation to Simplified and changes UI labels only. Structure-checked; verified on YouTube 21.07.247 and 21.13.164.",
       "default": false,
-      "dependencies": [],
+      "dependencies": [
+        "BytecodePatch"
+      ],
       "compatiblePackages": [
         {
           "packageName": "com.google.android.youtube",
@@ -20,7 +22,38 @@
           ],
           "targets": [
             {
-              "version": "21.07.247",
+              "version": null,
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": 28,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Remember subtitle language",
+      "description": "Always remembers the last selected global subtitle language and opens matching captions on new videos. Includes auto-translation and HansFix support. No settings switch. Verified structure: YouTube 21.13.164; other versions require matching structures.",
+      "default": true,
+      "dependencies": [
+        "BytecodePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "com.google.android.youtube",
+          "name": "YouTube",
+          "description": null,
+          "apkFileType": "APK_REQUIRED",
+          "appIconColor": "#FF0033",
+          "signatures": [
+            "5aad2bee6db95d17e05a08d7d1e64c10a1511879154483916b6ae6c7fd9cb0c6",
+            "3d7a1223019aa39d9ea0e3436ab7c0896bfb4fb679f4de5fe7c23f326c8f994a"
+          ],
+          "targets": [
+            {
+              "version": null,
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": 28,
