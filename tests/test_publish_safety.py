@@ -46,7 +46,7 @@ def patch_list(version='1.2.3'):
 
 def fixture_sources():
     return {
-        'patches/src/main/kotlin/addon/Patch.kt': b'val hansFixPatch = bytecodePatch(name = "HansFix") {}',
+        'patches/src/main/kotlin/addon/Patch.kt': b'val hansFixPatch = bytecodePatch(name = "HansFix") {}\nval memory = bytecodePatch(name = "Remember subtitle language") {}\nval shared = bytecodePatch(description = "Shared runtime") {}',
         'extensions/extension/src/main/java/addon/Runtime.java': b'package io.github.yydarlinker.hansfix;\npublic class Runtime {}',
     }
 
@@ -216,7 +216,7 @@ class ManifestTests(unittest.TestCase):
     def test_root_versions_agree(self):
         files = {'patches-bundle.json': encoded(manifest()), 'patches-list.json': encoded(patch_list()),
                  'gradle.properties': b'version = 1.2.3\n'}
-        self.assertEqual([], safety.metadata_contract(files, required=True, expected_version='1.2.3'))
+        self.assertIn(('patches-list.json', 'release-must-include-both-caption-patches'), safety.metadata_contract(files, required=True, expected_version='1.2.3'))
         self.assertTrue(safety.metadata_contract(files, expected_version='1.2.4'))
         changed = dict(files, **{'patches-list.json': encoded(patch_list('1.2.4'))})
         self.assertIn(('patches-list.json', 'release-version-mismatch'), safety.metadata_contract(changed))
@@ -243,11 +243,11 @@ class ProductionContractTests(unittest.TestCase):
         files = fixture_sources()
         self.assertEqual([], safety.source_contract(files))
         files['patches/src/main/kotlin/addon/Other.kt'] = b'val another = resourcePatch(name = "Other") {}'
-        self.assertIn(('<production>', 'expected-exactly-one-production-patch'), safety.source_contract(files))
+        self.assertIn(('<production>', 'expected-two-features-and-shared-extension'), safety.source_contract(files))
         for key in list(files):
             if key.startswith('patches/'):
                 del files[key]
-        self.assertIn(('<production>', 'expected-exactly-one-production-patch'), safety.source_contract(files))
+        self.assertIn(('<production>', 'expected-two-features-and-shared-extension'), safety.source_contract(files))
 
     def test_test_and_template_patch_definitions_are_not_production(self):
         files = fixture_sources()

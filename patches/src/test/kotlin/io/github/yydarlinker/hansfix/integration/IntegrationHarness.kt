@@ -199,16 +199,18 @@ private fun execute(args: Arguments, audit: Audit) {
                 addonBundle = loadBundle(args.addon); audit.status("ADDON_LOADED"); audit.count(addonBundle.size)
             }
             val addon = addonBundle.singleOrNull { it.name == ADDON } ?: throw Gate("FAILED_ADDON_SELECTION")
+            val memory = addonBundle.singleOrNull { it.name == "Remember subtitle language" }
+            val addons = listOfNotNull(addon, memory)
             val scratch = Files.createTempDirectory(args.output.toPath(), "session-").toFile()
             // Patcher deletes its temporaryFilesPath during initialization. It only receives a
             // fresh child of the newly-created scratch directory, never caller-supplied input paths.
             Patcher(PatcherConfig(apkFile = args.input, temporaryFilesPath = scratch.resolve("patcher"),
                 fileWorkspacePath = scratch.resolve("workspace"))).use { patcher ->
                 val metadata = patcher.context.packageMetadata
-                gate(metadata.packageName == YOUTUBE && metadata.versionName == VERSION, "FAILED_APK_TARGET")
+                gate(metadata.packageName == YOUTUBE && metadata.versionName in setOf(VERSION, "21.13.164"), "FAILED_APK_TARGET")
                 audit.status("APK_TARGET_VERIFIED")
                 val officialBaseline = args.mode == "official-only" || args.mode == "official-defaults"
-                if (!officialBaseline) gate(compatible(addon, metadata), "FAILED_ADDON_COMPATIBILITY")
+                if (!officialBaseline) gate(addons.all { compatible(it, metadata) }, "FAILED_ADDON_COMPATIBILITY")
                 val captions = if (args.mode == "addon-only") null else selectCaptions(official)
                 val architecture = architecture(args.input)
                 val officialSelected = when (args.mode) {
@@ -219,8 +221,8 @@ private fun execute(args: Arguments, audit: Audit) {
                 gate(captions == null || captions in officialSelected, "FAILED_CAPTIONS_NOT_SELECTED")
                 val selected = when {
                     officialBaseline -> officialSelected // Loaded addon is deliberately never selected.
-                    args.mode == "reverse" -> listOf(addon) + officialSelected
-                    else -> officialSelected + addon
+                    args.mode == "reverse" -> addons + officialSelected
+                    else -> officialSelected + addons
                 }
                 gate(!officialBaseline || addon !in selected, "FAILED_BASELINE_ADDON_SELECTED")
                 val dependencies = closure(selected)
@@ -242,7 +244,7 @@ private fun execute(args: Arguments, audit: Audit) {
                         else {
                             failed = true
                             audit.patch(result.patch, "FAILED")
-                            if (result.patch === addon) audit.addonGate(error)
+                            if (result.patch in addons) audit.addonGate(error)
                             if (args.mode == "addon-only" && result.patch === addon && expectedFailure(error, args.failureMarker)) {
                                 matchedNegative = true
                             } else throw Gate("FAILED_PATCH_EXECUTION")

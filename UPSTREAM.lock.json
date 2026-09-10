@@ -22,7 +22,7 @@
   "gradle": "9.7.1",
   "patches_plugin": "1.3.4",
   "patches_plugin_commit": "a230c33f7eca1e18b07bf1114ca850421520f98d",
-  "functional_patch_count": 1,
+  "functional_patch_count": 2,
   "implementation_stage": "implemented; release readiness tracked separately",
   "user_manager_confirmed_version": "1.29.0",
   "verified_input": {
@@ -31,5 +31,16 @@
     "version_code": 1561056418,
     "sha256": "afed0724c7cbdec08626573f5e0c405db76e11fe9bfdafbc3884690a766666db"
   },
-  "release_status_source": "GitHub Releases and generated channel patches-bundle.json"
+  "release_status_source": "GitHub Releases and generated channel patches-bundle.json",
+  "compatibility_policy": "No exact version gate; original package/signatures and unique structural validation",
+  "additional_verified_input": {
+    "package_name": "com.google.android.youtube",
+    "version_name": "21.13.164",
+    "version_code": 1561063732,
+    "sha256": "c193daf879d36e04886c34dcc44580b1c98c20534165d306c2a04b8025fc3f46"
+  },
+  "current_official_bundle": {
+    "version": "1.42.0",
+    "sha256": "e1b1ca9bed58861266c837ee14e23d9901999d1d772e66c7f1f7fa79a641d078"
+  }
 }

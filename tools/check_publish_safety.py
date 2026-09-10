@@ -106,22 +106,29 @@ def patch_list_issues(data):
         if not isinstance(value, dict) or not valid_version(value.get('version')):
             return ['invalid-patch-list-version']
         patches = value.get('patches')
-        if not isinstance(patches, list) or len(patches) != 1:
-            return ['expected-one-generated-patch']
-        patch = patches[0]
-        if not isinstance(patch, dict) or patch.get('name') != PATCH_NAME or patch.get('default') is not False:
-            return ['unexpected-generated-patch']
-        if not isinstance(patch.get('description'), str) or not patch['description'].strip():
-            return ['missing-generated-patch-description']
-        packages = patch.get('compatiblePackages')
-        if not isinstance(packages, list) or len(packages) != 1 or not isinstance(packages[0], dict):
-            return ['unexpected-generated-package']
-        package = packages[0]
-        if package.get('packageName') != 'com.google.android.youtube':
-            return ['unexpected-generated-package']
-        targets = package.get('targets')
-        if not isinstance(targets, list) or len(targets) != 1 or not isinstance(targets[0], dict) or targets[0].get('version') != '21.07.247':
-            return ['unexpected-generated-target']
+        if not isinstance(patches, list) or not 1 <= len(patches) <= 2:
+            return ['unexpected-generated-patch-count']
+        allowed = {PATCH_NAME, 'Remember subtitle language'}
+        names = set()
+        for patch in patches:
+            if not isinstance(patch, dict) or patch.get('name') not in allowed or patch['name'] in names:
+                return ['unexpected-generated-patch']
+            names.add(patch['name'])
+            if patch.get('default') is not (patch['name'] == 'Remember subtitle language'):
+                return ['unexpected-generated-patch-default']
+            if not isinstance(patch.get('description'), str) or not patch['description'].strip():
+                return ['missing-generated-patch-description']
+            packages = patch.get('compatiblePackages')
+            if not isinstance(packages, list) or len(packages) != 1 or not isinstance(packages[0], dict):
+                return ['unexpected-generated-package']
+            package = packages[0]
+            if package.get('packageName') != 'com.google.android.youtube':
+                return ['unexpected-generated-package']
+            targets = package.get('targets')
+            if not isinstance(targets, list) or not targets or any(
+                not isinstance(t, dict) or t.get('version') not in (None, '21.07.247', '21.13.164') for t in targets
+            ):
+                return ['unexpected-generated-target']
         return []
     except (ValueError, TypeError, UnicodeError, RecursionError):
         return ['invalid-patch-list']
@@ -195,8 +202,8 @@ def source_contract(files):
                 package[1] == NAMESPACE or package[1].startswith(NAMESPACE + '.')
             ):
                 issues.append((name, 'foreign-or-non-java-runtime-source'))
-    if registrations != 1:
-        issues.append(('<production>', 'expected-exactly-one-production-patch'))
+    if registrations != 3:
+        issues.append(('<production>', 'expected-two-features-and-shared-extension'))
     if runtime_count == 0:
         issues.append(('<production>', 'missing-addon-runtime-source'))
     return issues
@@ -217,6 +224,8 @@ def metadata_contract(files, required=False, expected_version=None):
     version = load_json(manifest)['version']
     if version != load_json(patch_list)['version']:
         issues.append(('patches-list.json', 'release-version-mismatch'))
+    if expected_version is not None and {p.get("name") for p in load_json(patch_list)["patches"]} != {PATCH_NAME, "Remember subtitle language"}:
+        issues.append(("patches-list.json", "release-must-include-both-caption-patches"))
     if expected_version is not None and version != expected_version:
         issues.append(('patches-bundle.json', 'unexpected-release-version'))
     properties = files.get('gradle.properties', b'')

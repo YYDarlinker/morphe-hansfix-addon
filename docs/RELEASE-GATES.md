@@ -23,3 +23,7 @@
 - 当前CI只使用GITHUB_TOKEN，不引入用户APK/签名/会话secret。
 
 发布后核验公开可读的manifest、版本/asset/hash、Morphe元数据解析与远程下载的bundle内容。正式功能状态看当前根manifest和release，不看历史准备记录。
+
+## 2026-09-10 update: maintenance validation scope
+
+The user explicitly requested lower validation cost and device-based acceptance. For this release, use the existing quick safety/runtime checks, a combined official-defaults + both-addon Session, and targeted inspection of the added DEX call sites/branches. Repeat only when an actual code change or failure requires it. Full inventories, reverse-order matrices and mutation suites are not default release tasks. The dev release may be published after these checks with phone behavior explicitly pending user confirmation.

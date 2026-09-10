@@ -78,7 +78,7 @@ private data class NetworkHook(val owner: String, val method: MethodReference, v
 @Suppress("unused")
 val hansFixPatch = bytecodePatch(
     name = "HansFix - Simplified Chinese captions",
-    description = "Use with official Captions in expert mode. Maps Traditional auto-translation to Simplified and changes UI labels only. YouTube 21.07.247 (1561056418).",
+    description = "Use with official Captions in expert mode. Maps Traditional auto-translation to Simplified and changes UI labels only. Structure-checked; verified on YouTube 21.07.247 and 21.13.164.",
     default = false,
 ) {
     compatibleWith(Compatibility(
@@ -90,14 +90,13 @@ val hansFixPatch = bytecodePatch(
             "5aad2bee6db95d17e05a08d7d1e64c10a1511879154483916b6ae6c7fd9cb0c6",
             "3d7a1223019aa39d9ea0e3436ab7c0896bfb4fb679f4de5fe7c23f326c8f994a",
         ),
-        targets = listOf(AppTarget(version = "21.07.247", minSdk = 28)),
+        targets = listOf(AppTarget(version = null, minSdk = 28)),
     ))
     // No cross-bundle Kotlin dependency and no copied official extension.
-    extendWith("extensions/hansfix-addon.mpe")
+    dependsOn(captionAddonExtensionPatch)
     execute {
-        ensure(packageMetadata.packageName == "com.google.android.youtube" &&
-            packageMetadata.versionName == "21.07.247" && packageMetadata.versionCode == "1561056418",
-            "requires original YouTube 21.07.247 / 1561056418; do not patch an installed Morphe APK again.")
+        ensure(packageMetadata.packageName == "com.google.android.youtube",
+            "requires original supported YouTube APK; do not patch an installed Morphe APK again.")
         val runtime = classDefBy(RUNTIME)
         ensure(runtime.methods.none { it.name == "applyCaptionMenuLabel" }, "already applied or duplicate addon selected.")
     }
