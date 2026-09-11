@@ -45,7 +45,7 @@ the output APK by the coordinating agent. No playback, installation or device ru
 | minimal | official, addon | exact `Captions` plus its actual dependencies | unsigned APK |
 | defaults | official, addon | compatible default official patches, including Captions | unsigned APK |
 | reverse | addon, official | same as minimal | unsigned APK |
-| addon-only | addon only (official file only hash-checked) | none | addon precondition failure, no APK |
+| addon-only | addon only (official file only hash-checked) | none | unsigned APK; no official extension loaded |
 | official-only | official, addon loaded; only official selected | exact `Captions` plus dependencies | baseline unsigned APK |
 | official-defaults | official, addon loaded; only official selected | same compatible defaults as defaults | baseline unsigned APK |
 
@@ -60,13 +60,10 @@ Defaults uses STANDARD installer availability (`ENABLED` / `REQUIRED`, falling b
 Version-code constraints are checked against the APK metadata when declared. No patch options
 are overridden. In particular, no caption cookies, auth values or URLs are supplied.
 
-The negative control only accepts a failed result **for the selected addon** containing the
-configured exact precondition message in its exception chain (or an explicit uppercase status token). Unrelated dependency,
-loading, configuration, resource, filesystem or dex failures are not a passing negative test.
-Default exact message, verified against the current `HansFixPatch.kt`:
-`HansFix: official Captions is required in the SAME expert-mode operation; its extension is missing.`
-Pass `integration.expectedAddonFailure` only if the addon changes its stable failure contract. The match is never used
-to force a failure in the harness. Expected negative failure exits 0; unexpected results exit 1.
+Since 2026-09-11, addon-only is a positive HansFix independence check: HansFix must apply and emit
+an unsigned APK without loading official patches. Every patch error fails the session. This replaces
+the first release's negative official-dependency test; no expected-failure override is accepted.
+Subtitle memory is selected in the official combined modes, not in addon-only.
 
 ## Compile (one Gradle process at a time)
 
@@ -117,7 +114,7 @@ For an intentionally changed fixture, optional `integration.inputSha` and
 package/version is still rejected. Inputs/outputs cannot overwrite one another.
 
 JavaExec `--args` is an alternative to Gradle properties (do not mix duplicate arguments):
-`--mode`, `--input`, `--official`, `--addon`, `--output-dir`, `--expected-addon-failure`,
+`--mode`, `--input`, `--official`, `--addon`, `--output-dir`,
 `--input-sha`, `--official-sha`, each followed by one value. For direct `java -cp` execution,
 use the same test-only classpath and also pass `--repo C:\Work\Morphe\hansfix-addon`.
 

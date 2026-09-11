@@ -4,7 +4,7 @@ patches {
     // TODO: Update this section with your project details.
     about {
         name = "YYDarlinker HansFix Addon"
-        description = "Requires official Captions; independent expert-mode addon"
+        description = "Independent caption addons; compatible with official Morphe patches"
         source = "https://github.com/YYDarlinker/morphe-hansfix-addon"
         author = "YYDarlinker"
         contact = "na"
@@ -67,7 +67,7 @@ tasks.register<JavaExec>("runIntegration") {
     systemProperty("hansfix.integration.repo", rootProject.projectDir.absolutePath)
     val properties = mapOf(
         "mode" to "mode", "input" to "input", "official" to "official", "addon" to "addon",
-        "outputDir" to "output-dir", "expectedAddonFailure" to "expected-addon-failure",
+        "outputDir" to "output-dir",
         "inputSha" to "input-sha", "officialSha" to "official-sha"
     )
     properties.forEach { (property, argument) ->

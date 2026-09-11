@@ -4,6 +4,8 @@
 
 ## 发布前
 
+以下首版矩阵为历史记录。2026-09-11 独立启用版本执行文末维护范围；“缺官方源失败”和 Cookie bridge 检查已被独立构建成功及无 Cookie 状态引用检查替代。
+
 - JDK21纯Java运行时测试通过；生产Kotlin/extension构建通过且runtime仅自有namespace。
 - 精确原包/官方包哈希已验证；使用两个独立bundle加载入口进入同一个Patcher实例。
 - 最小官方Captions组合、官方默认兼容组合、逆序输入组合能实际生成APK；缺官方源明确失败。
@@ -27,3 +29,7 @@
 ## 2026-09-10 update: maintenance validation scope
 
 The user explicitly requested lower validation cost and device-based acceptance. For this release, use the existing quick safety/runtime checks, a combined official-defaults + both-addon Session, and targeted inspection of the added DEX call sites/branches. Repeat only when an actual code change or failure requires it. Full inventories, reverse-order matrices and mutation suites are not default release tasks. The dev release may be published after these checks with phone behavior explicitly pending user confirmation.
+
+## 2026-09-11 independent HansFix
+
+Run the quick existing checks, one official 1.42.0 default + both-addon session and one addon-only session. Inspect the constant installation marker, native request hook, additional display producers/comparison, and preservation of original track methods. No Cookie configuration is supplied to either session. Runtime Cookie off/on behavior and menu operation remain user phone acceptance. Publish through the existing dev workflow and verify the downloaded release matches the validated code.

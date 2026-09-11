@@ -8,8 +8,8 @@ public final class HansFixRuntime {
     private HansFixRuntime() {}
 
     /**
-     * Fail closed until the patcher replaces this DEX method with the official
-     * toggle-cache bridge. Deliberately not a settings lookup or a mutable toggle.
+     * False when only the shared extension is installed by subtitle memory.
+     * The HansFix patch replaces this DEX method with true, independently of Cookie settings.
      */
     public static boolean isEnabled() {
         return false;

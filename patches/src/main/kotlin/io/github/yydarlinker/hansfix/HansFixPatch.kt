@@ -31,7 +31,6 @@ import java.util.logging.Logger
 
 private const val RUNTIME = "Lio/github/yydarlinker/hansfix/HansFixRuntime;"
 private const val OFFICIAL = "Lapp/morphe/extension/youtube/patches/CaptionCookiesPatch;"
-private const val BRIDGE = "hansfixAddonGetCaptionToggle"
 private const val AUTO_OPTION = "AUTO_TRANSLATE_CAPTIONS_OPTION"
 private const val AUTO_MENU = "AUTO_TRANSLATE_SUBTITLE_MENU_BOTTOM_SHEET_FRAGMENT"
 private const val STRING = "Ljava/lang/String;"
@@ -74,11 +73,13 @@ private data class MenuBindings(
     val summaryRegister: Int,
 )
 private data class NetworkHook(val owner: String, val method: MethodReference, val index: Int, val urlRegister: Int)
+private data class DisplayHook(val owner: String, val method: MethodReference, val index: Int,
+    val trackRegister: Int, val destination: Int? = null)
 
 @Suppress("unused")
 val hansFixPatch = bytecodePatch(
     name = "HansFix - Simplified Chinese captions",
-    description = "Use with official Captions in expert mode. Maps Traditional auto-translation to Simplified and changes UI labels only. Structure-checked; verified on YouTube 21.07.247 and 21.13.164.",
+    description = "Maps Traditional auto-translation to Simplified across caption menus. Independent of the official caption Cookie setting; compatible with official patches. Structure-checked, without an exact version restriction.",
     default = false,
 ) {
     compatibleWith(Compatibility(
@@ -108,16 +109,10 @@ val hansFixPatch = bytecodePatch(
 }
 
 private fun BytecodePatchContext.installAddon() {
-    val official = classDefByOrNull(OFFICIAL)
-        ?: fail("official Captions is required in the SAME expert-mode operation; its extension is missing.")
-    val toggle = official.fields.filter {
-        it.name == "SET_CAPTION_COOKIES" && it.type == "Z" && AccessFlags.STATIC.isSet(it.accessFlags)
-    }.toList().unique("official Cookie toggle cache")
-    ensure(official.methods.none { it.name == BRIDGE }, "toggle bridge already exists; duplicate addon/input.")
-
     val network = findNetworkHook()
     val model = findModel()
     val menus = findMenus(model)
+    val displayHooks = findAdditionalDisplayHooks(model, menus.map { it.method.id() }.toSet())
     ensure(menus.size == 2 && menus.sumOf { it.rows.size } == 4, "expected two subtitle menus and four row construction sites.")
     val itemType = menus.map { it.itemType }.distinct().unique("caption menu item type")
     val item = classDefBy(itemType)
@@ -137,12 +132,13 @@ private fun BytecodePatchContext.installAddon() {
     ensure(runtime.methods.count { it.name == "captionMenuLabel" && it.params() == listOf(STRING, "Z", STRING, STRING, "Z") && it.returnType == STRING } == 1,
         "runtime UI policy API missing.")
 
-    mutableClassDefBy(OFFICIAL).addStatic(BRIDGE, emptyList(), "Z", 1,
-        "sget-boolean v0, ${toggle.id()}\nreturn v0")
     runtime.methods.remove(isEnabled)
+    // This is an installation marker for the shared extension, not a user setting.
+    // The stub stays false when only Remember subtitle language is selected.
     runtime.addStatic("isEnabled", emptyList(), "Z", 1,
-        "invoke-static {}, $OFFICIAL->$BRIDGE()Z\nmove-result v0\nreturn v0")
+        "const/4 v0, 0x1\nreturn v0")
     installTypedUiHelpers(runtime, model, itemType, trackField, title)
+    installAdditionalDisplayHooks(model, displayHooks)
 
     val request = mutableClassDefBy(network.owner).methods.filter { it.id() == network.method.id() }.toList().unique("mutable network method")
     request.addInstructions(network.index,
@@ -161,36 +157,42 @@ private fun BytecodePatchContext.installAddon() {
             }
         }
     }
-    logger.info("HansFix verified structure: officialToggle=1, network=1, menuRows=4, summaries=2; UI-only, original tracks unchanged.")
+    logger.info("HansFix verified structure: independent network=1, menuRows=4, summaries=2, additionalDisplaySites=${displayHooks.size}; original tracks unchanged.")
 }
 
 private fun BytecodePatchContext.findNetworkHook(): NetworkHook {
     val matches = mutableListOf<NetworkHook>()
     classDefForEach { cls ->
         cls.methods.forEach { method ->
-            if (method.implementation?.instructions?.any {
-                it.methodRef()?.let { ref -> ref.definingClass == OFFICIAL && ref.name == "setRequireCookies" && ref.params() == listOf(STRING) } == true
-            } != true) return@forEach
             val code = method.code()
+            if (method.params().size != 1 || !method.returnType.startsWith("L") ||
+                !AccessFlags.PUBLIC.isSet(method.accessFlags) || !AccessFlags.FINAL.isSet(method.accessFlags) ||
+                code.none { it.methodRef()?.let { ref ->
+                    ref.definingClass == "Lorg/chromium/net/UploadDataProviders;" && ref.name == "create" &&
+                        ref.params() == listOf("Ljava/nio/ByteBuffer;")
+                } == true }) return@forEach
             code.forEachIndexed { index, instruction ->
                 val ref = instruction.methodRef() ?: return@forEachIndexed
-                if (ref.definingClass != OFFICIAL || ref.name != "setRequireCookies" || ref.params() != listOf(STRING)) return@forEachIndexed
-                val call = instruction as? FiveRegisterInstruction ?: fail("unsupported Cookie call encoding.")
-                ensure(instruction.opcode == Opcode.INVOKE_STATIC && call.registerCount == 1, "Cookie call shape changed.")
-                val next = code.getOrNull(index + 1)
-                val builder = next?.methodRef()
-                ensure(builder?.definingClass == "Lorg/chromium/net/CronetEngine;" && builder.name == "newUrlRequestBuilder" && builder.returnType == BUILDER,
-                    "Cookie check must immediately precede the Cronet builder.")
-                ensure(next is FiveRegisterInstruction && next.registerD == call.registerC, "Cookie and builder URL registers differ.")
-                ensure(cls.methods.any { it.hasString("Cookie") && it.hasString("User-Agent") && it.code().any { ins ->
-                    ins.methodRef()?.let { it.definingClass == OFFICIAL && it.name == "getCookies" } == true
-                } }, "official Cookie request-header helper is missing.")
+                if (ref.definingClass != "Lorg/chromium/net/CronetEngine;" || ref.name != "newUrlRequestBuilder" ||
+                    ref.returnType != BUILDER || ref.params() != listOf(STRING,
+                        "Lorg/chromium/net/UrlRequest\$Callback;", "Ljava/util/concurrent/Executor;")) return@forEachIndexed
+                val call = instruction as? FiveRegisterInstruction ?: fail("unsupported caption request encoding.")
+                ensure(instruction.opcode == Opcode.INVOKE_VIRTUAL && call.registerCount == 4,
+                    "caption request builder shape changed.")
                 ensure(code.none { it.methodRef()?.definingClass == RUNTIME }, "network hook already applied.")
-                matches += NetworkHook(cls.type, method, index, call.registerC)
+                // Preserve official request-header handling when selected, including its URL observation order.
+                val previous = code.getOrNull(index - 1)
+                val officialCall = previous?.methodRef()
+                val hookIndex = if (officialCall?.definingClass == OFFICIAL && officialCall.name == "setRequireCookies") {
+                    ensure(previous is FiveRegisterInstruction && previous.registerCount == 1 &&
+                        previous.registerC == call.registerD, "official caption URL registers differ.")
+                    index - 1
+                } else index
+                matches += NetworkHook(cls.type, method, hookIndex, call.registerD)
             }
         }
     }
-    return matches.unique("official caption request hook (select official Captions)")
+    return matches.unique("native caption request hook")
 }
 
 private fun BytecodePatchContext.findModel(): ModelBindings {
@@ -231,6 +233,86 @@ private fun BytecodePatchContext.findModel(): ModelBindings {
         ensure(AccessFlags.PUBLIC.isSet(definition.accessFlags), "model field access is not public; unsupported target.")
     }
     return ModelBindings(model.type, language, vss, display, url, translated)
+}
+
+/**
+ * The settings sheet uses caption protobufs instead of the legacy ListAdapter rows.
+ * Normalize its display serialization and the corresponding label comparison together.
+ * Never mutate the track, its hashCode/toString, language code or VSS ID.
+ */
+private fun BytecodePatchContext.findAdditionalDisplayHooks(model: ModelBindings,
+    existingMenus: Set<String>): List<DisplayHook> {
+    val modelClass = classDefBy(model.type)
+    val textMethod = modelClass.methods.single { it.name == "toString" && it.params().isEmpty() }
+    val normalizer = textMethod.code().mapNotNull { it.methodRef() }.filter {
+        it.params() == listOf("Ljava/lang/CharSequence;") && it.returnType == "Ljava/lang/CharSequence;"
+    }.unique("caption display null normalizer")
+    val hooks = mutableListOf<DisplayHook>()
+    val writers = mutableListOf<FieldReference>()
+    val comparisons = mutableListOf<FieldReference>()
+    classDefForEach { cls ->
+        if (cls.type == model.type || cls.type.startsWith("Lio/github/yydarlinker/hansfix/")) return@classDefForEach
+        cls.methods.forEach { method ->
+            if (method.id() in existingMenus) return@forEach
+            val code = method.code()
+            code.forEachIndexed { index, ins ->
+                val ref = ins.methodRef()
+                if (ref?.definingClass == model.type && ref.name == "toString" && ref.params().isEmpty()) {
+                    val call = ins as? FiveRegisterInstruction ?: fail("unsupported caption display call encoding.")
+                    ensure(ins.opcode == Opcode.INVOKE_VIRTUAL && call.registerCount == 1 &&
+                        code.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT, "caption display call shape changed.")
+                    hooks += DisplayHook(cls.type, method, index, call.registerC)
+                }
+                if (ins.opcode != Opcode.IGET_OBJECT || ins.fieldRef()?.id() != model.display.id() ||
+                    code.getOrNull(index + 1)?.methodRef()?.id() != normalizer.id()) return@forEachIndexed
+                val load = ins as TwoRegisterInstruction
+                val normalize = code[index + 1] as? FiveRegisterInstruction
+                val result = code.getOrNull(index + 2) as? OneRegisterInstruction
+                val stringify = code.getOrNull(index + 3)
+                val stringCall = stringify as? FiveRegisterInstruction
+                val stringResult = code.getOrNull(index + 4) as? OneRegisterInstruction
+                ensure(normalize?.registerCount == 1 && normalize.registerC == load.registerA &&
+                    code[index + 2].opcode == Opcode.MOVE_RESULT_OBJECT && result?.registerA == load.registerA &&
+                    stringify?.methodRef()?.let { it.definingClass == "Ljava/lang/CharSequence;" && it.name == "toString" } == true &&
+                    stringCall?.registerC == load.registerA && code[index + 4].opcode == Opcode.MOVE_RESULT_OBJECT &&
+                    stringResult?.registerA == load.registerA, "caption display serialization shape changed.")
+                // This path either writes the local caption descriptor's display field or compares that same field.
+                val next = code.getOrNull(index + 5)
+                if (next?.opcode == Opcode.IGET_OBJECT && code.getOrNull(index + 6)?.methodRef()?.let {
+                    it.definingClass == STRING && it.name == "equals"
+                } == true) {
+                    comparisons += next.fieldRef() ?: fail("caption selection display field missing.")
+                } else {
+                    ensure(next?.methodRef()?.name == "copyOnWrite", "caption display must feed a local descriptor builder.")
+                    val store = code.drop(index + 6).take(10).firstOrNull {
+                        it.opcode == Opcode.IPUT_OBJECT && it is TwoRegisterInstruction &&
+                            it.registerA == load.registerA && it.fieldRef()?.type == STRING
+                    } ?: fail("caption descriptor display store missing.")
+                    writers += store.fieldRef()!!
+                }
+                hooks += DisplayHook(cls.type, method, index, load.registerB, load.registerA)
+            }
+        }
+    }
+    val displayField = writers.distinctBy { it.id() }.unique("settings caption descriptor display field")
+    ensure(writers.size >= 3 && comparisons.size == 1 && comparisons.single().id() == displayField.id(),
+        "settings caption producers and selection comparison must agree.")
+    ensure(hooks.count { it.destination == null } >= 2, "additional caption summary displays missing.")
+    return hooks
+}
+
+private fun BytecodePatchContext.installAdditionalDisplayHooks(model: ModelBindings, hooks: List<DisplayHook>) {
+    for ((_, edits) in hooks.groupBy { it.method.id() }) {
+        val first = edits.first()
+        val method = mutableClassDefBy(first.owner).methods.single { it.id() == first.method.id() }
+        for (hook in edits.sortedByDescending { it.index }) {
+            val call = "invoke-static {v${hook.trackRegister}}, $RUNTIME->autoTranslateMenuText(${model.type})$STRING"
+            // Replacement preserves branch labels at the original read/call. The following original
+            // CharSequence normalization remains valid because String implements CharSequence.
+            method.replaceInstruction(hook.index, call)
+            hook.destination?.let { method.addInstructions(hook.index + 1, "move-result-object v$it") }
+        }
+    }
 }
 
 private fun BytecodePatchContext.findMenus(model: ModelBindings): List<MenuBindings> {

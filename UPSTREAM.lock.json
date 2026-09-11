@@ -1,5 +1,6 @@
 {
   "delivery_mode": "expert_official_plus_independent_addon_same_session",
+  "hansfix_runtime_policy": "Installed HansFix is independent of official Captions and Cookie settings; native request hook and local caption display adapters",
   "template_commit": "268367a3553642bd6adb4ac3a5f8c4feffc4b326",
   "official_bundle_reference": {
     "version": "1.41.0",

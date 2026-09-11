@@ -52,7 +52,7 @@ private class Gate(val status: String) : RuntimeException()
 
 private data class Arguments(
     val mode: String, val input: File, val official: File, val addon: File,
-    val output: File, val repo: File, val failureMarker: String,
+    val output: File, val repo: File,
     val inputSha: String, val officialSha: String,
 ) {
     companion object {
@@ -62,14 +62,13 @@ private data class Arguments(
             args.toList().chunked(2).forEach { (key, value) ->
                 gate(key.startsWith("--") && values.put(key.removePrefix("--"), value) == null, "FAILED_ARGUMENTS")
             }
-            val keys = setOf("mode", "input", "official", "addon", "output-dir", "repo", "expected-addon-failure", "input-sha", "official-sha")
+            val keys = setOf("mode", "input", "official", "addon", "output-dir", "repo", "input-sha", "official-sha")
             gate(values.keys.all { it in keys }, "FAILED_ARGUMENTS")
             fun required(key: String) = values[key]?.takeIf { it.isNotBlank() } ?: throw Gate("FAILED_ARGUMENTS")
             val mode = values["mode"] ?: "minimal"
             gate(mode in setOf("minimal", "defaults", "reverse", "addon-only", "official-only", "official-defaults"), "FAILED_MODE")
             return Arguments(mode, File(required("input")), File(required("official")), File(required("addon")),
                 File(required("output-dir")), File(System.getProperty("hansfix.integration.repo") ?: required("repo")),
-                values["expected-addon-failure"] ?: "HansFix: official Captions is required in the SAME expert-mode operation; its extension is missing.",
                 values["input-sha"] ?: INPUT_SHA, values["official-sha"] ?: OFFICIAL_SHA)
         }
     }
@@ -93,7 +92,6 @@ private fun Arguments.validate() {
     gate(!output.canonicalFile.toPath().startsWith(root), "FAILED_OUTPUT_INSIDE_REPO")
     // A fresh mode directory avoids stale-success artifacts and overwriting previous evidence.
     gate(!output.exists() || output.isDirectory && output.list().orEmpty().isEmpty(), "FAILED_OUTPUT_NOT_EMPTY")
-    gate(failureMarker.isNotBlank() && failureMarker.length <= 512 && failureMarker.none { it == '\r' || it == '\n' }, "FAILED_FAILURE_MARKER")
     gate(inputSha.matches(Regex("[a-fA-F0-9]{64}")) && officialSha.matches(Regex("[a-fA-F0-9]{64}")), "FAILED_HASH_ARGUMENT")
     gate(sha256(input).equals(inputSha, true), "FAILED_INPUT_HASH")
     gate(sha256(official).equals(officialSha, true), "FAILED_OFFICIAL_HASH")
@@ -161,18 +159,6 @@ private fun closure(roots: Collection<Patch<*>>): List<Patch<*>> {
     return result
 }
 
-private fun expectedFailure(error: Throwable, marker: String): Boolean {
-    val seen = Collections.newSetFromMap(IdentityHashMap<Throwable, Boolean>())
-    var current: Throwable? = error
-    val token = if (marker.matches(Regex("[A-Z][A-Z0-9_]{7,127}")))
-        Regex("(?<![A-Z0-9_])${Regex.escape(marker)}(?![A-Z0-9_])") else null
-    while (current != null && seen.add(current)) {
-        if (current.message == marker || token != null && current.message?.contains(token) == true) return true
-        current = current.cause
-    }
-    return false
-}
-
 private fun execute(args: Arguments, audit: Audit) {
     args.validate()
     // The lock lives in the shared runs directory, not a per-mode directory. One process, one
@@ -191,8 +177,8 @@ private fun execute(args: Arguments, audit: Audit) {
                 addonBundle = loadBundle(args.addon); audit.status("ADDON_LOADED"); audit.count(addonBundle.size)
                 official = loadBundle(args.official); audit.status("OFFICIAL_LOADED"); audit.count(official.size)
             } else {
-                // Negative control does not even load the official bundle: static init must not
-                // accidentally satisfy the addon guard. The official file is only hash-checked.
+                // Independent mode does not load the official bundle at all.
+                // Its file is only hash-checked for reproducibility of the input arguments.
                 official = if (args.mode == "addon-only") emptySet() else loadBundle(args.official).also {
                     audit.status("OFFICIAL_LOADED"); audit.count(it.size)
                 }
@@ -200,7 +186,8 @@ private fun execute(args: Arguments, audit: Audit) {
             }
             val addon = addonBundle.singleOrNull { it.name == ADDON } ?: throw Gate("FAILED_ADDON_SELECTION")
             val memory = addonBundle.singleOrNull { it.name == "Remember subtitle language" }
-            val addons = listOfNotNull(addon, memory)
+            // Independence is the HansFix contract. Memory is verified in the official combination.
+            val addons = if (args.mode == "addon-only") listOf(addon) else listOfNotNull(addon, memory)
             val scratch = Files.createTempDirectory(args.output.toPath(), "session-").toFile()
             // Patcher deletes its temporaryFilesPath during initialization. It only receives a
             // fresh child of the newly-created scratch directory, never caller-supplied input paths.
@@ -235,7 +222,6 @@ private fun execute(args: Arguments, audit: Audit) {
                 patcher += selected.toCollection(linkedSetOf())
                 audit.status("SINGLE_SESSION_EXECUTING")
                 var failed = false
-                var matchedNegative = false
                 val succeeded = Collections.newSetFromMap(IdentityHashMap<Patch<*>, Boolean>())
                 runBlocking {
                     patcher().collect { result ->
@@ -245,17 +231,9 @@ private fun execute(args: Arguments, audit: Audit) {
                             failed = true
                             audit.patch(result.patch, "FAILED")
                             if (result.patch in addons) audit.addonGate(error)
-                            if (args.mode == "addon-only" && result.patch === addon && expectedFailure(error, args.failureMarker)) {
-                                matchedNegative = true
-                            } else throw Gate("FAILED_PATCH_EXECUTION")
+                            throw Gate("FAILED_PATCH_EXECUTION")
                         }
                     }
-                }
-                if (args.mode == "addon-only") {
-                    gate(failed && matchedNegative, "FAILED_ADDON_ONLY_DID_NOT_REJECT_AS_EXPECTED")
-                    audit.status("EXPECTED_ADDON_ONLY_FAILURE_CONFIRMED")
-                    audit.status("NO_APK_PRODUCED")
-                    return@use
                 }
                 gate(!failed && selected.all { it in succeeded }, "FAILED_INCOMPLETE_PATCH_RESULTS")
                 audit.status("COMPILING_APK")

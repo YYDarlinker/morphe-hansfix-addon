@@ -1,0 +1,33 @@
+{
+  "date": "2026-09-11",
+  "target": "YouTube 21.13.164 / 1561063732",
+  "input_sha256": "c193daf879d36e04886c34dcc44580b1c98c20534165d306c2a04b8025fc3f46",
+  "official": "Morphe Patches 1.42.0",
+  "official_sha256": "e1b1ca9bed58861266c837ee14e23d9901999d1d772e66c7f1f7fa79a641d078",
+  "patcher": "1.12.0",
+  "candidate_sha256": "731e5e936bca529b49637297bdc893976db713d3f7bf7b0be8e4308202aecf89",
+  "combined": {
+    "selection": "official compatible defaults plus HansFix and Remember subtitle language",
+    "selected_roots": 83,
+    "dependency_closure": 196,
+    "result": "UNSIGNED_APK_VERIFIED",
+    "output_sha256": "d00c6b5f8ef5003bc5c67630c1c7e5da18d01d3f923b766b9a86291efc7104db"
+  },
+  "standalone": {
+    "selection": "HansFix only, no official bundle loaded",
+    "result": "UNSIGNED_APK_VERIFIED",
+    "output_sha256": "db8c4df04f49b137ae2d6937beab95ebf78ad64275a1c2da2d95fdac51ebec52"
+  },
+  "scope_correction": "Initial addon-only attempt also selected subtitle memory and stopped at its existing official Captions prerequisite. HansFix independence was then checked separately; memory is covered by the successful combined session.",
+  "dex_checks_both_outputs": {
+    "hansfix_installed_marker": "constant true",
+    "official_runtime_setting_references": 0,
+    "native_request_hook": 1,
+    "additional_display_sites": 7,
+    "original_track_instruction_dump": "identical to original APK",
+    "official_extension": "unmodified in combined; absent in standalone"
+  },
+  "quick_checks": "JDK runtime policy suite, 45 Python tests, addon namespace and publish safety passed",
+  "user_prior_observation": "Cookie off still downloads Traditional auto-translation; only Simplified mapping is disabled",
+  "phone_acceptance": "pending user verification of the new release; no signed APK or device playback tested locally"
+}

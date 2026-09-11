@@ -7,6 +7,17 @@ import java.util.IdentityHashMap
  * Only fixed source text, known role/helper names and numeric match counts may reach the audit.
  * Do not replace these allowlists with a generic prefix/ASCII check: cookies are also ASCII. */
 private val fixedAddonGates = setOf(
+    "unsupported caption request encoding.",
+    "caption request builder shape changed.",
+    "official caption URL registers differ.",
+    "unsupported caption display call encoding.",
+    "caption display call shape changed.",
+    "caption display serialization shape changed.",
+    "caption selection display field missing.",
+    "caption display must feed a local descriptor builder.",
+    "caption descriptor display store missing.",
+    "settings caption producers and selection comparison must agree.",
+    "additional caption summary displays missing.",
     "requires original YouTube 21.07.247 / 1561056418; do not patch an installed Morphe APK again.",
     "already applied or duplicate addon selected.",
     "official Captions is required in the SAME expert-mode operation; its extension is missing.",
@@ -37,6 +48,7 @@ private val fixedAddonGates = setOf(
 )
 
 private val addonGateRoles = setOf(
+    "native caption request hook", "caption display null normalizer", "settings caption descriptor display field",
     "auto-translation sentinel check", "caption menu item type", "caption track model",
     "menu backing List field", "menu callback original-track field", "menu item binding",
     "mutable menu method", "mutable network method",

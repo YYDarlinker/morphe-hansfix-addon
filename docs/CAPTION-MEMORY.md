@@ -20,4 +20,4 @@ On the inspected 21.13.164 input, the preference-writing selector is found by it
 
 The patch resolves the current manager's model, native list, translated list, language and URL through unique structural matches and generated typed DEX accessors. On a model-ready initialization path it calls the current default selector, then enters YouTube's existing enabled event path if a track exists. The default selector first tries the remembered language in native and then translated tracks, otherwise continues its original logic. This preserves the original caption event and listener notification behavior without polling or delayed clicks.
 
-Only actual HansFix URL mapping makes translated zh-Hant count as zh-Hans. With HansFix unselected or disabled, that mapping is inactive. No global track field is rewritten.
+Only actual HansFix URL mapping makes translated zh-Hant count as zh-Hans. With HansFix unselected, that mapping is inactive. Starting with the 2026-09-11 update, selected HansFix is independent of official Cookie settings. No global track field is rewritten.
