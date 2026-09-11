@@ -50,14 +50,14 @@ python tools/check_publish_safety.py
 ## 补丁列表
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.0.0-dev.2](https://github.com/YYDarlinker/morphe-hansfix-addon/releases/tag/v1.0.0-dev.2)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
+> **[v1.0.0-dev.3](https://github.com/YYDarlinker/morphe-hansfix-addon/releases/tag/v1.0.0-dev.3)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
 <details open>
 <summary>📦 YouTube&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [HansFix - Simplified Chinese captions](#hansfix-simplified-chinese-captions) | Use with official Captions in expert mode. Maps Traditional auto-translation to Simplified and changes UI labels only. Structure-checked; verified on YouTube 21.07.247 and 21.13.164. |  |
+| [HansFix - Simplified Chinese captions](#hansfix-simplified-chinese-captions) | Maps Traditional auto-translation to Simplified across caption menus. Independent of the official caption Cookie setting; compatible with official patches. Structure-checked, without an exact version restriction. |  |
 | [Remember subtitle language](#remember-subtitle-language) | Always remembers the last selected global subtitle language and opens matching captions on new videos. Includes auto-translation and HansFix support. No settings switch. Verified structure: YouTube 21.13.164; other versions require matching structures. |  |
 
 </details>

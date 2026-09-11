@@ -1,10 +1,10 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.0-dev.2",
+  "version": "1.0.0-dev.3",
   "patches": [
     {
       "name": "HansFix - Simplified Chinese captions",
-      "description": "Use with official Captions in expert mode. Maps Traditional auto-translation to Simplified and changes UI labels only. Structure-checked; verified on YouTube 21.07.247 and 21.13.164.",
+      "description": "Maps Traditional auto-translation to Simplified across caption menus. Independent of the official caption Cookie setting; compatible with official patches. Structure-checked, without an exact version restriction.",
       "default": false,
       "dependencies": [
         "BytecodePatch"

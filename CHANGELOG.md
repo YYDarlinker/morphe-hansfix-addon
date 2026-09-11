@@ -1,3 +1,9 @@
+## [1.0.0-dev.3](https://github.com/YYDarlinker/morphe-hansfix-addon/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2026-09-11)
+
+### 🐛 Bug Fixes
+
+* decouple HansFix from caption cookies and unify subtitle menu labels ([8ba3189](https://github.com/YYDarlinker/morphe-hansfix-addon/commit/8ba3189f010458f170832f25b2bd9d874c2f4172))
+
 ## [1.0.0-dev.2](https://github.com/YYDarlinker/morphe-hansfix-addon/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2026-09-10)
 
 ### ✨ New Features
