@@ -1,3 +1,9 @@
+## [1.0.0-dev.5](https://github.com/YYDarlinker/morphe-hansfix-addon/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2026-09-11)
+
+### 🐛 Bug Fixes
+
+* distinguish caption request groups and memory selection events ([e239830](https://github.com/YYDarlinker/morphe-hansfix-addon/commit/e239830190470c381556b0c8a5e8b95016f7a488))
+
 ## [1.0.0-dev.4](https://github.com/YYDarlinker/morphe-hansfix-addon/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-09-11)
 
 ### ✨ New Features

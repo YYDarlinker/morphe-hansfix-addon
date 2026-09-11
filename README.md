@@ -52,7 +52,7 @@ python tools/check_publish_safety.py
 ## 补丁列表
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.0.0-dev.4](https://github.com/YYDarlinker/morphe-hansfix-addon/releases/tag/v1.0.0-dev.4)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
+> **[v1.0.0-dev.5](https://github.com/YYDarlinker/morphe-hansfix-addon/releases/tag/v1.0.0-dev.5)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
 <details open>
 <summary>📦 YouTube&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
 <br>
