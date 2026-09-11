@@ -45,6 +45,10 @@ public final class DiagnosticStoreTest {
         lifecycle();
         strictUrls();
         privacy();
+        grouping();
+        groupingUnknowns();
+        groupingLifecycleAndBounds();
+        selectionEvents();
         responseHeaders();
         bytes();
         boundsAndIdentity();
@@ -159,6 +163,18 @@ public final class DiagnosticStoreTest {
             check(!((String) object).contains(marker) && !((String) object).contains(second), "retained string privacy");
             return;
         }
+        if (object instanceof byte[]) {
+            String bytes = new String((byte[]) object, StandardCharsets.UTF_8);
+            check(!bytes.contains(marker) && !bytes.contains(second), "retained byte privacy");
+            return;
+        }
+        if (object instanceof Map<?, ?>) {
+            for (Map.Entry<?, ?> item : ((Map<?, ?>) object).entrySet()) {
+                scanRetained(item.getKey(), marker, second, visited);
+                scanRetained(item.getValue(), marker, second, visited);
+            }
+            return;
+        }
         if (object instanceof WeakReference<?>) return; // Identities only, never dereference host data.
         if (object instanceof Iterable<?>) {
             for (Object item : (Iterable<?>) object) scanRetained(item, marker, second, visited);
@@ -170,6 +186,208 @@ public final class DiagnosticStoreTest {
             field.setAccessible(true);
             scanRetained(field.get(object), marker, second, visited);
         }
+    }
+
+    private static Object field(Object object, String name) throws Exception {
+        Field field = object.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        return field.get(object);
+    }
+
+    private static String requestBlock(DiagnosticStore store, long sequence) {
+        String report = store.report();
+        String start = "request=" + sequence + " ";
+        int index = report.indexOf(start);
+        check(index >= 0, "request retained: " + sequence);
+        int end = report.indexOf("\nrequest=", index);
+        int timeline = report.indexOf("\nselection_timeline", index);
+        if (end < 0 || timeline < end) end = timeline;
+        return report.substring(index, end < 0 ? report.length() : end);
+    }
+
+    private static long groupId(DiagnosticStore store, long sequence, String kind) {
+        String text = requestBlock(store, sequence).split(kind + "_group=")[1].split("[ \n]")[0];
+        return "unknown".equals(text) ? -1 : Long.parseLong(text);
+    }
+
+    private static String identityUrl() {
+        return URL + "?v=aB3_dE6-fG9&lang=en&tlang=zh-Hans&fmt=json3&kind=asr&name=Original";
+    }
+
+    private static void grouping() throws Exception {
+        DiagnosticStore s = fresh(new Clock());
+        String base = identityUrl();
+        s.onRequest(new Host(), base + "&signature=first");
+        s.onRequest(new Host(), base + "&signature=second");
+        s.onRequest(new Host(), base.replace("zh-Hans", "zh-Hant") + "&signature=second");
+        s.onRequest(new Host(), base + "&signature=first");
+        check(groupId(s, 1, "video") == groupId(s, 2, "video"), "signatures keep video identity");
+        check(groupId(s, 1, "track") == groupId(s, 2, "track"), "signatures keep track identity");
+        check(groupId(s, 1, "request") != groupId(s, 2, "request"), "different signing URLs differ");
+        check(groupId(s, 1, "video") == groupId(s, 3, "video"), "target change keeps video");
+        check(groupId(s, 1, "track") != groupId(s, 3, "track"), "target change changes track");
+        check(groupId(s, 1, "request") == groupId(s, 4, "request"), "exact URL repeats share request group");
+        check(groupId(s, 1, "video") != groupId(s, 1, "track"), "group domains separate");
+        s.onRequest(new Host(), base.replace("aB3_dE6-fG9", "zY8_xW5-vU2"));
+        check(groupId(s, 1, "video") != groupId(s, 5, "video"), "different video differs");
+        check(groupId(s, 1, "track") != groupId(s, 5, "track"), "video is part of track");
+        String[] variants = {
+            base.replace("lang=en", "lang=EN"), base.replace("lang=en", "lang=zz-one"),
+            base.replace("lang=en", "lang=zz-two"), base.replace("fmt=json3", "fmt=unknown-one"),
+            base.replace("fmt=json3", "fmt=unknown-two"), base.replace("kind=asr", "kind=ASR"),
+            base.replace("name=Original", "name=original"), base.replace("name=Original", "name="),
+            base.replace("&name=Original", ""), base.replace("name=Original", "name=%2541"),
+            base.replace("name=Original", "name=%41"), base.replace("name=Original", "name=%C3%A9"),
+            base.replace("name=Original", "name=e%CC%81"), base.replace("&tlang=zh-Hans", ""),
+            base.replace("tlang=zh-Hans", "tlang="), base.replace("&fmt=json3", ""),
+            base.replace("fmt=json3", "fmt="), base.replace("&kind=asr", ""), base.replace("kind=asr", "kind=")
+        };
+        List<Long> ids = new ArrayList<Long>();
+        ids.add(groupId(s, 1, "track"));
+        for (int i = 0; i < variants.length; i++) {
+            s.onRequest(new Host(), variants[i]);
+            long id = groupId(s, 6 + i, "track");
+            check(id > 0 && !ids.contains(id), "identity distinctions preserved: " + i);
+            ids.add(id);
+        }
+        long seq = 5 + variants.length;
+        s.onRequest(new Host(), base.replace("name=Original", "name=A+B"));
+        s.onRequest(new Host(), base.replace("name=Original", "name=A%20B"));
+        check(groupId(s, seq + 1, "track") == groupId(s, seq + 2, "track"), "query space equivalents");
+        check(groupId(s, seq + 1, "request") != groupId(s, seq + 2, "request"), "request uses exact raw encoding");
+        s.onRequest(new Host(), base.replace("v=a", "%76=%61"));
+        check(groupId(s, 1, "video") == groupId(s, seq + 3, "video"), "encoded v decoded once");
+        check(groupId(s, 1, "track") == groupId(s, seq + 3, "track"), "equivalent identity encoding");
+        String marker = "hidden" + "Track" + "Canary";
+        s.onRequest(new Host(), base.replace("name=Original", "name=" + marker) + "&signature=" + marker);
+        scanRetained(s, marker, "aB3_dE6-fG9", new IdentityHashMap<Object, Boolean>());
+        String report = s.report();
+        check(!report.contains(marker) && !report.contains("aB3_dE6-fG9") && !report.contains(base), "grouping exports no raw identity");
+        contains(report, "HMAC-SHA256"); contains(report, "不同签名 URL 不同组");
+    }
+
+    private static void groupingUnknowns() {
+        String[] invalidVideo = {
+            "", "?lang=en", "?v=", "?v=short&lang=en", "?v=aB3_dE6-fG9&v=aB3_dE6-fG9&lang=en",
+            "?v=aB3_dE6-fG9&%76=zY8_xW5-vU2&lang=en", "?v=aB3_dE6-fG%39%00&lang=en",
+            "?v=aB3_dE6-fG%FF&lang=en", "?v=aB3_dE6+fG9&lang=en", "?v=aB3_dE6-fG99&lang=en"
+        };
+        for (String query : invalidVideo) {
+            DiagnosticStore s = fresh(new Clock()); s.onRequest(new Host(), URL + query);
+            check(groupId(s, 1, "video") == -1, "invalid/missing/duplicate v unknown");
+            check(groupId(s, 1, "track") == -1, "unknown video cannot form track group");
+            check(groupId(s, 1, "request") > 0, "exact request group independent of video validity");
+        }
+        String base = identityUrl();
+        String[] invalidTrack = {
+            base.replace("&lang=en", ""), base.replace("lang=en", "lang="), base + "&lang=en",
+            base + "&%6cang=en", base + "&tlang=zh-Hans", base + "&fmt=json3", base + "&kind=asr",
+            base + "&name=Original", base.replace("name=Original", "name=%FF"),
+            base.replace("name=Original", "name=%C0%AF"), base.replace("name=Original", "name=%00"),
+            base.replace("name=Original", "name=" + String.join("", Collections.nCopies(257, "x")))
+        };
+        for (String raw : invalidTrack) {
+            DiagnosticStore s = fresh(new Clock()); s.onRequest(new Host(), raw);
+            check(groupId(s, 1, "video") > 0, "invalid track does not destroy valid video");
+            check(groupId(s, 1, "track") == -1, "invalid/missing/duplicate track fields unknown");
+        }
+        DiagnosticStore bounded = fresh(new Clock());
+        bounded.onRequest(new Host(), base.replace("name=Original", "name=" + String.join("", Collections.nCopies(256, "%41"))));
+        check(groupId(bounded, 1, "track") > 0, "exact decode bound accepted");
+        bounded.onRequest(new Host(), base.replace("name=Original", "name=" + String.join("", Collections.nCopies(257, "%41"))));
+        check(groupId(bounded, 2, "track") == -1, "encoded over bound unknown, never truncated");
+        bounded.onRequest(new Host(), base + "&%FF=unknown");
+        check(groupId(bounded, 3, "video") == -1 && groupId(bounded, 3, "track") == -1, "invalid key conservatively unknown");
+        bounded.onRequest(new Host(), base + "&signature=" + (char) 0xd800);
+        // URI implementations may reject this earlier; if retained, never hash UTF-8 replacement bytes.
+        if (bounded.report().contains("request=4 ")) check(groupId(bounded, 4, "request") == -1, "malformed Unicode raw URL not merged");
+    }
+
+    private static void zeroed(byte[] bytes, String message) {
+        for (byte value : bytes) if (value != 0) { check(false, message); return; }
+        check(true, message);
+    }
+
+    private static List<byte[]> digests(DiagnosticStore s) throws Exception {
+        List<byte[]> result = new ArrayList<byte[]>();
+        for (Object group : (List<?>) field(s, "groups")) result.add((byte[]) field(group, "digest"));
+        return result;
+    }
+
+    private static void groupingLifecycleAndBounds() throws Exception {
+        for (int operation = 0; operation < 3; operation++) {
+            Clock c = new Clock(); DiagnosticStore s = fresh(c); s.onRequest(new Host(), identityUrl());
+            byte[] key = (byte[]) field(s, "groupingSecret"); byte[] keyCopy = key.clone();
+            List<byte[]> hashes = digests(s); byte[] previousDigest = hashes.get(0).clone();
+            long video = groupId(s, 1, "video"), track = groupId(s, 1, "track"), request = groupId(s, 1, "request");
+            s.start(); check(field(s, "groupingSecret") == key, "active start preserves salt");
+            if (operation == 0) s.stop();
+            else if (operation == 1) s.clear();
+            else { c.ms(900000); s.isRecording(); }
+            zeroed(key, "session secret wiped");
+            for (byte[] digest : hashes) zeroed(digest, "mapped digest wiped");
+            check(field(s, "groupingSecret") == null && digests(s).isEmpty(), "secret and map references released");
+            if (operation != 1) {
+                check(video == groupId(s, 1, "video") && track == groupId(s, 1, "track")
+                        && request == groupId(s, 1, "request"), "displayed numbers retained after stop/expiry");
+            } else contains(s.report(), "retained=0");
+            s.start(); s.onRequest(new Host(), identityUrl());
+            check(!Arrays.equals(keyCopy, (byte[]) field(s, "groupingSecret")), "fresh random secret each recording");
+            check(!Arrays.equals(previousDigest, digests(s).get(0)), "same identity different session HMAC");
+            check(groupId(s, 1, "video") == 1, "numbers session-local, not cross-session identities");
+        }
+        DiagnosticStore s = fresh(new Clock()); s.onRequest(new Host(), identityUrl());
+        List<byte[]> oldest = digests(s);
+        long firstVideo = groupId(s, 1, "video"), firstRequest = groupId(s, 1, "request");
+        long previousRequest = firstRequest;
+        for (int i = 1; i <= 85; i++) {
+            s.onRequest(new Host(), URL + "?v=V" + String.format(java.util.Locale.ROOT, "%010d", i) + "&lang=en");
+            check(digests(s).size() <= 240, "all group namespaces share one 240-entry bound");
+            long current = groupId(s, i + 1, "request");
+            check(current > previousRequest, "new IDs increase through eviction");
+            previousRequest = current;
+        }
+        check(digests(s).size() == 240, "group map fills but does not exceed cap");
+        for (byte[] digest : oldest) zeroed(digest, "evicted digests wiped");
+        s.onRequest(new Host(), identityUrl());
+        check(groupId(s, 87, "video") > previousRequest && groupId(s, 87, "video") != firstVideo,
+                "evicted identity gets new ID, never recycled");
+        check(groupId(s, 87, "request") > previousRequest, "request numbers not reused");
+        s.stop(); check(digests(s).isEmpty(), "full map destroyed on stop");
+    }
+
+    private static void selectionEvents() throws Exception {
+        Clock c = new Clock(); DiagnosticStore s = new DiagnosticStore(c);
+        s.onSelectionEvent(0); contains(s.report(), "selection_retained=0");
+        c.ms(5000); s.start();
+        check(Modifier.isSynchronized(DiagnosticStore.class.getMethod("onSelectionEvent", int.class).getModifiers()),
+                "selection event entrypoint synchronized");
+        s.onSelectionEvent(-1); s.onSelectionEvent(3); s.onSelectionEvent(Integer.MAX_VALUE);
+        contains(s.report(), "selection_retained=0");
+        c.ms(7); s.onSelectionEvent(0); c.ms(9); s.onSelectionEvent(1); s.onSelectionEvent(2);
+        contains(s.report(), "selection_event=1 time_ms=7 kind=0");
+        contains(s.report(), "selection_event=2 time_ms=16 kind=1");
+        contains(s.report(), "selection_event=3 time_ms=16 kind=2");
+        contains(s.report(), "0=preferred_path"); contains(s.report(), "separate; no causal link to requests");
+        contains(s.report(), "没有新增宿主选择钩子");
+        for (int i = 0; i < 100; i++) { c.ms(1); s.onSelectionEvent(i % 3); }
+        contains(s.report(), "selection_capacity=80 selection_retained=80 selection_evicted=23");
+        check(!s.report().contains("selection_event=23 "), "old events evicted");
+        contains(s.report(), "selection_event=24 time_ms=37 kind=2");
+        contains(s.report(), "selection_event=103 time_ms=116 kind=0");
+        for (Object event : (List<?>) field(s, "selectionEvents")) {
+            for (Field field : event.getClass().getDeclaredFields()) check(field.getType().isPrimitive(), "events retain primitive fields only");
+        }
+        check(s.identityCount() == 0, "selection events introduce no host association");
+        s.stop(); String stopped = s.report(); s.onSelectionEvent(0);
+        check(stopped.equals(s.report()), "stopped events preserve report");
+        s.clear(); contains(s.report(), "selection_retained=0 selection_evicted=0");
+        s.start(); s.onSelectionEvent(2); contains(s.report(), "selection_event=1 time_ms=0 kind=2");
+        s.stop(); s.start(); contains(s.report(), "selection_retained=0");
+        c.ms(899999); s.onSelectionEvent(0); c.ms(1); s.onSelectionEvent(1);
+        contains(s.report(), "selection_event=1 time_ms=899999 kind=0");
+        contains(s.report(), "selection_retained=1"); contains(s.report(), "stop_reason=expired");
+        s.clear(); contains(s.report(), "selection_retained=0");
     }
 
     private static void responseHeaders() {
@@ -294,7 +512,7 @@ public final class DiagnosticStoreTest {
                         go.await();
                         for (int n = 0; n < 500; n++) {
                             if (role == 0) { s.start(); if (n % 2 == 0) s.stop(); else s.clear(); }
-                            else if (role == 1) { s.report(); s.isRecording(); }
+                            else if (role == 1) { s.report(); s.isRecording(); s.onSelectionEvent(n % 4); }
                             else {
                                 Object cb = new Host(), req = new Host(), builder = new Host();
                                 ByteBuffer b = ByteBuffer.allocate(8);

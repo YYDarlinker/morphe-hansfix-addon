@@ -36,6 +36,10 @@ public final class CaptionDiagnosticsRuntime {
     public static boolean isRecording() {
         try { return Holder.STORE.isRecording(); } catch (Throwable ignored) { return false; }
     }
+    /** Fixed event kind only; no track, manager, language, URL or origin string accepted. */
+    public static void onSelectionEvent(int kind) {
+        try { Holder.STORE.onSelectionEvent(kind); } catch (Throwable ignored) { }
+    }
     public static void onRequest(Object callback, String url) {
         try { Holder.STORE.onRequest(callback, url); } catch (Throwable ignored) { }
     }

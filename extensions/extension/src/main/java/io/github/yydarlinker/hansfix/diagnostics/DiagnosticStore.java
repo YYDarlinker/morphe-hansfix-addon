@@ -4,6 +4,13 @@ import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.List;
@@ -17,6 +24,8 @@ import java.util.UUID;
 public final class DiagnosticStore {
     public static final int MAX_REQUESTS = 80;
     public static final int MAX_BASELINES = 80;
+    public static final int MAX_GROUPS = 240;
+    public static final int MAX_SELECTION_EVENTS = 80;
     public static final long RECORDING_NANOS = 15L * 60L * 1000000000L;
     private static final int MAX_URL = 8192;
     private static final int MAX_HEADERS = 1000000;
@@ -25,6 +34,11 @@ public final class DiagnosticStore {
     private final Clock clock;
     private final ArrayList<Entry> entries = new ArrayList<Entry>();
     private final ArrayList<Baseline> baselines = new ArrayList<Baseline>();
+    // Bounded digest-to-number map; no URL or decoded identity is retained.
+    private final ArrayList<Group> groups = new ArrayList<Group>();
+    private final ArrayList<SelectionEvent> selectionEvents = new ArrayList<SelectionEvent>();
+    private byte[] groupingSecret;
+    private long groupSequence, selectionSequence, selectionEvicted;
     private boolean recording;
     private long started;
     private long sequence;
@@ -41,6 +55,8 @@ public final class DiagnosticStore {
     public synchronized void start() {
         if (active()) return;
         reset();
+        groupingSecret = new byte[32];
+        new SecureRandom().nextBytes(groupingSecret);
         session = UUID.randomUUID().toString();
         started = clock.nanoTime();
         stopReason = "none";
@@ -65,6 +81,11 @@ public final class DiagnosticStore {
         for (Entry e : entries) release(e);
         entries.clear();
         baselines.clear();
+        destroyGrouping();
+        selectionEvents.clear();
+        groupSequence = 0;
+        selectionSequence = 0;
+        selectionEvicted = 0;
         sequence = 0;
         evicted = 0;
         started = 0;
@@ -91,6 +112,25 @@ public final class DiagnosticStore {
             release(e);
         }
         baselines.clear();
+        destroyGrouping();
+    }
+
+    /** Diagnostic observations only; no host selection hook or request attribution. */
+    public synchronized void onSelectionEvent(int kind) {
+        if (!active() || kind < 0 || kind > 2) return;
+        if (selectionEvents.size() == MAX_SELECTION_EVENTS) {
+            selectionEvents.remove(0);
+            selectionEvicted++;
+        }
+        selectionEvents.add(new SelectionEvent(++selectionSequence,
+                Math.min(RECORDING_NANOS, elapsed()) / 1000000L, kind));
+    }
+
+    private void destroyGrouping() {
+        if (groupingSecret != null) Arrays.fill(groupingSecret, (byte) 0);
+        groupingSecret = null;
+        for (Group group : groups) Arrays.fill(group.digest, (byte) 0);
+        groups.clear();
     }
 
     public synchronized void onRequest(Object callback, String url) {
@@ -334,6 +374,13 @@ public final class DiagnosticStore {
                 .append("仅匹配 HTTPS www.youtube.com / m.youtube.com 的 /api/timedtext。\n")
                 .append("不保存 URL、视频标识/标题、完整查询、Cookie/令牌值、正文/片段或异常。\n")
                 .append("参数仅保留有限白名单分类；other=未识别，ambiguous=重复参数。\n")
+                .append("分组仅为随机会话内数字，使用每次记录随机密钥的 HMAC-SHA256；不导出密钥或摘要。\n")
+                .append("video_group 要求恰好一个有效 v（11位 ASCII 字母/数字/_/-）；track_group 另要求唯一非空 lang。\n")
+                .append("track_group 包含 v/lang/tlang/fmt/kind/name，保留大小写及缺省/空值区别；身份字段重复或解码无效为 unknown。\n")
+                .append("身份值仅严格解码一次，最多768编码字符/256解码字符；不保存解码值。\n")
+                .append("request_group 基于精确原始 URL：不同签名 URL 不同组，不代表不同视频或字幕轨道。\n")
+                .append("分组映射最多240项，淘汰后新编号单调增加不复用；同一身份可能因淘汰获得新号。\n")
+                .append("停止/清空/到期擦除密钥和映射摘要；停止/到期保留显示数字，跨会话不可比较。\n")
                 .append("Cookie 与 UA 是构建器钩子的最后一次观察（计数可含重复，最多1000000），不证明实际发出。\n")
                 .append("pot_present 仅表示参数出现，不代表令牌有效；不解析字幕，不统计字幕条数。\n")
                 .append("known_bytes 仅累计配对读取的 position 增量，不使用 Content-Length，不表示网络线速字节。\n")
@@ -344,7 +391,10 @@ public final class DiagnosticStore {
         for (Entry e : entries) {
             out.append("request=").append(e.sequence).append(" start_ms=").append(e.startMs)
                     .append(" end_ms=").append(e.endMs < 0 ? "pending" : Long.toString(e.endMs))
-                    .append(" terminal=").append(e.terminal).append("\n  lang=").append(e.url.lang)
+                    .append(" terminal=").append(e.terminal)
+                    .append("\n  video_group=").append(groupLabel(e.url.videoGroup))
+                    .append(" track_group=").append(groupLabel(e.url.trackGroup))
+                    .append(" request_group=").append(groupLabel(e.url.requestGroup)).append("\n  lang=").append(e.url.lang)
                     .append(" tlang=").append(e.url.tlang).append(" fmt=").append(e.url.fmt)
                     .append(" c=").append(e.url.client).append(" pot_present=").append(e.url.pot)
                     .append("\n  status=").append(e.status < 0 ? "unknown" : Integer.toString(e.status))
@@ -357,6 +407,17 @@ public final class DiagnosticStore {
                     .append(" ua_last=").append(e.ua).append(" ua_observations=").append(e.uaObservations)
                     .append("\n  known_bytes=").append(e.knownBytes).append(" read_observations=").append(e.readObservations)
                     .append(" bytes_complete=").append(!e.bytesUnknown && e.readObservations > 0 && "success".equals(e.terminal)).append('\n');
+        }
+        out.append("\nselection_timeline (separate; no causal link to requests)\n")
+                .append("selection_capacity=").append(MAX_SELECTION_EVENTS)
+                .append(" selection_retained=").append(selectionEvents.size())
+                .append(" selection_evicted=").append(selectionEvicted).append('\n')
+                .append("kind: 0=preferred_path, 1=memory_hit, 2=memory_miss；仅记录序号、相对时间与白名单类型。\n")
+                .append("仅诊断观察现有 SubtitleMemoryRuntime 方法；没有新增宿主选择钩子，不能覆盖或证明所有真实选择。\n")
+                .append("事件与请求为独立时间线；时间接近不表示因果关联，不关联视频/轨道/请求分组。\n");
+        for (SelectionEvent event : selectionEvents) {
+            out.append("selection_event=").append(event.sequence).append(" time_ms=").append(event.timeMs)
+                    .append(" kind=").append(event.kind).append('\n');
         }
         return out.toString();
     }
@@ -406,12 +467,66 @@ public final class DiagnosticStore {
         }
     }
 
+    private static String groupLabel(long id) { return id < 0 ? "unknown" : Long.toString(id); }
+
+    private static final class SelectionEvent {
+        final long sequence, timeMs;
+        final int kind;
+        SelectionEvent(long sequence, long timeMs, int kind) {
+            this.sequence = sequence; this.timeMs = timeMs; this.kind = kind;
+        }
+    }
+
+    private static final class Group {
+        final byte[] digest;
+        final long id;
+        Group(byte[] digest, long id) { this.digest = digest; this.id = id; }
+    }
+
+    /** Length framing and domains avoid concatenation, absent/empty and cross-type collisions.
+     * Crypto objects and identity bytes are call-local, never stored on the recording.
+     */
+    private long group(String domain, String... values) {
+        if (groupingSecret == null) return -1;
+        byte[] digest = null;
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(groupingSecret, "HmacSHA256"));
+            mac.update(domain.getBytes(StandardCharsets.US_ASCII));
+            for (String value : values) {
+                if (value == null) { mac.update(new byte[] {-1, -1, -1, -1}); continue; }
+                ByteBuffer encoded = StandardCharsets.UTF_8.newEncoder()
+                        .onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)
+                        .encode(CharBuffer.wrap(value));
+                byte[] bytes = new byte[encoded.remaining()];
+                encoded.get(bytes);
+                if (encoded.hasArray()) Arrays.fill(encoded.array(), (byte) 0);
+                try {
+                    int length = bytes.length;
+                    mac.update((byte) (length >>> 24)); mac.update((byte) (length >>> 16));
+                    mac.update((byte) (length >>> 8)); mac.update((byte) length);
+                    mac.update(bytes);
+                } finally { Arrays.fill(bytes, (byte) 0); }
+            }
+            digest = mac.doFinal();
+            for (Group group : groups) if (Arrays.equals(group.digest, digest)) return group.id;
+            if (groupSequence == Long.MAX_VALUE) return -1;
+            if (groups.size() == MAX_GROUPS) Arrays.fill(groups.remove(0).digest, (byte) 0);
+            long id = ++groupSequence;
+            groups.add(new Group(digest, id));
+            digest = null; // Ownership transferred to the bounded map until eviction/stop.
+            return id;
+        } catch (Exception ignored) { return -1; }
+        finally { if (digest != null) Arrays.fill(digest, (byte) 0); }
+    }
+
     private static final class SafeUrl {
         String lang = "absent", tlang = "absent", fmt = "absent", client = "absent";
         boolean pot;
+        long videoGroup = -1, trackGroup = -1, requestGroup = -1;
     }
 
-    private static SafeUrl parse(String raw) {
+    private SafeUrl parse(String raw) {
         if (raw == null || raw.length() > MAX_URL) return null;
         try {
             URI uri = new URI(raw);
@@ -421,7 +536,11 @@ public final class DiagnosticStore {
                     || !"/api/timedtext".equals(uri.getRawPath()) || uri.getRawFragment() != null) return null;
             SafeUrl result = new SafeUrl();
             String query = uri.getRawQuery();
-            if (query == null) return result;
+            // Only these temporary locals contain decoded identity. SafeUrl stores numbers only.
+            String[] identity = new String[6];
+            int[] seen = new int[6];
+            boolean keysValid = true;
+            if (query == null) query = "";
             int start = 0, count = 0;
             while (start <= query.length()) {
                 if (++count > 128) return null;
@@ -430,6 +549,13 @@ public final class DiagnosticStore {
                 int equal = query.indexOf('=', start);
                 if (equal < 0 || equal > end) equal = end;
                 String key = decode(query.substring(start, equal), 32);
+                String identityKey = decodeIdentity(query.substring(start, equal));
+                if (identityKey == null) keysValid = false;
+                int index = identityIndex(identityKey);
+                if (index >= 0) {
+                    seen[index]++;
+                    identity[index] = decodeIdentity(query.substring(Math.min(equal + 1, end), end));
+                }
                 if ("pot".equals(key)) result.pot = true; // NEVER decode or retain its value.
                 else if ("lang".equals(key) || "tlang".equals(key) || "fmt".equals(key) || "c".equals(key)) {
                     String value = decode(query.substring(Math.min(equal + 1, end), end), 96);
@@ -442,8 +568,69 @@ public final class DiagnosticStore {
                 if (end == query.length()) break;
                 start = end + 1;
             }
+            if (keysValid && seen[0] == 1 && validVideo(identity[0])) {
+                result.videoGroup = group("video", identity[0]);
+                boolean trackValid = seen[1] == 1 && identity[1] != null && !identity[1].isEmpty();
+                for (int i = 1; i < identity.length; i++) {
+                    if (seen[i] > 1 || (seen[i] == 1 && identity[i] == null)) trackValid = false;
+                }
+                if (trackValid) result.trackGroup = group("track", identity);
+            }
+            result.requestGroup = group("request", raw);
             return result;
         } catch (Exception ignored) { return null; }
+    }
+
+    private static int identityIndex(String key) {
+        if ("v".equals(key)) return 0;
+        if ("lang".equals(key)) return 1;
+        if ("tlang".equals(key)) return 2;
+        if ("fmt".equals(key)) return 3;
+        if ("kind".equals(key)) return 4;
+        if ("name".equals(key)) return 5;
+        return -1;
+    }
+
+    private static boolean validVideo(String value) {
+        if (value == null || value.length() != 11) return false;
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (!(c >= 'A' && c <= 'Z') && !(c >= 'a' && c <= 'z')
+                    && !(c >= '0' && c <= '9') && c != '_' && c != '-') return false;
+        }
+        return true;
+    }
+
+    /** Strict UTF-8 query decoding, once only. Never truncate or replace invalid bytes. */
+    private static String decodeIdentity(String value) {
+        if (value.length() > 768) return null;
+        byte[] bytes = null;
+        try {
+            ByteBuffer encoded = StandardCharsets.UTF_8.newEncoder()
+                    .onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .encode(CharBuffer.wrap(value));
+            bytes = new byte[encoded.remaining()];
+            encoded.get(bytes);
+            if (encoded.hasArray()) Arrays.fill(encoded.array(), (byte) 0);
+            int length = 0;
+            for (int i = 0; i < bytes.length; i++) {
+                int c = bytes[i] & 255;
+                if (c == '%') {
+                    if (i + 2 >= bytes.length) return null;
+                    int high = Character.digit((char) (bytes[++i] & 255), 16);
+                    int low = Character.digit((char) (bytes[++i] & 255), 16);
+                    if (high < 0 || low < 0) return null;
+                    bytes[length++] = (byte) ((high << 4) | low);
+                } else bytes[length++] = c == '+' ? (byte) ' ' : (byte) c;
+            }
+            String decoded = StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(bytes, 0, length)).toString();
+            if (decoded.length() > 256) return null;
+            for (int i = 0; i < decoded.length(); i++) if (Character.isISOControl(decoded.charAt(i))) return null;
+            return decoded;
+        } catch (Exception ignored) { return null; }
+        finally { if (bytes != null) Arrays.fill(bytes, (byte) 0); }
     }
 
     private static String decode(String value, int max) throws Exception {

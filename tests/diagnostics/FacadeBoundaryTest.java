@@ -45,6 +45,9 @@ public final class FacadeBoundaryTest {
         CaptionDiagnosticsRuntime.onRequest(callback, "https://www.youtube.com/api/timedtext");
         CaptionDiagnosticsRuntime.beforeRead(request, buffer);
         check(store.identityCount() == 0);
+        String off = store.report();
+        CaptionDiagnosticsRuntime.onSelectionEvent(0);
+        check(store.report().equals(off));
         store.start();
         check(CaptionDiagnosticsRuntime.isRecording());
         CaptionDiagnosticsRuntime.onRequest(callback, "https://www.youtube.com/api/timedtext?lang=en");
@@ -71,6 +74,11 @@ public final class FacadeBoundaryTest {
         CaptionDiagnosticsRuntime.onTerminal(null, -1);
         store.stop();
         String stopped = store.report();
+        CaptionDiagnosticsRuntime.onSelectionEvent(0);
+        CaptionDiagnosticsRuntime.onSelectionEvent(1);
+        CaptionDiagnosticsRuntime.onSelectionEvent(2);
+        CaptionDiagnosticsRuntime.onSelectionEvent(-1);
+        check(store.report().equals(stopped));
         CaptionDiagnosticsRuntime.onResponseHeaders(callback, 503, error);
         check(error.accesses == 1 && store.report().equals(stopped));
         check(!CaptionDiagnosticsRuntime.isRecording() && store.identityCount() == 0);

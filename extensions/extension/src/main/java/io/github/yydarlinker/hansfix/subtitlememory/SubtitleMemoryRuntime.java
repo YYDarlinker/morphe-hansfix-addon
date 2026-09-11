@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import java.util.List;
 import io.github.yydarlinker.hansfix.HansFixRuntime;
+import io.github.yydarlinker.hansfix.diagnostics.CaptionDiagnosticsRuntime;
 
 /** Global language memory. Native track objects are resolved afresh for every video. */
 public final class SubtitleMemoryRuntime {
@@ -15,6 +16,7 @@ public final class SubtitleMemoryRuntime {
     public static void onSelection(Object manager, Object track, Object origin) {
         if (manager == null || track == null || !(origin instanceof Enum<?>)
                 || !"PREFERRED_TRACK".equals(((Enum<?>) origin).name())) return;
+        diagnosticEvent(0); // Observed native PREFERRED_TRACK path, not proof of user input.
         String selected = effectiveLanguage(track);
         if (!isLanguage(selected)) return; // Closing CC does not erase the remembered language.
         Context context = context(manager);
@@ -29,7 +31,16 @@ public final class SubtitleMemoryRuntime {
         String wanted = preferences(context).getString(LANGUAGE, null);
         if (!isLanguage(wanted)) return null;
         Object match = find(nativeTracks(manager), wanted);
-        return match != null ? match : find(translatedTracks(manager), wanted);
+        Object resolved = match != null ? match : find(translatedTracks(manager), wanted);
+        diagnosticEvent(resolved == null ? 2 : 1);
+        return resolved;
+    }
+
+    private static void diagnosticEvent(int kind) {
+        // This shared runtime may exist without diagnostics selected: default-off does nothing.
+        try {
+            if (CaptionDiagnosticsRuntime.isRecording()) CaptionDiagnosticsRuntime.onSelectionEvent(kind);
+        } catch (Throwable ignored) { /* Never change native selection because diagnostics failed. */ }
     }
 
     private static SharedPreferences preferences(Context context) {
