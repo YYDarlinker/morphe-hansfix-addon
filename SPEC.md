@@ -50,3 +50,7 @@
 ## 2026-09-10: Caption memory and structure-based compatibility
 
 User authorized a second independently selectable patch in this same source: global last subtitle language and automatic captions on each new video, always active with no feature switch and no per-channel behavior. User supplied original YouTube 21.13.164 / 1561063732. Official 1.42.0 supports this version. Existing HansFix must work alongside the new patch. Replace exact version restrictions with package/signature and unique structural checks; newer versions are user-triable, not automatically device-verified. See docs/CAPTION-MEMORY.md. The no-change-to-track-fields restriction remains: invoke native selection/construction APIs rather than modifying shared track objects. Build/publish is authorized; phone acceptance remains separate.
+
+## 2026-09-11：独立字幕诊断补丁
+
+用户授权实现可在手机Morphe构建的标准诊断patch。沿用同一源和dev原生发布流程，新增独立可选 Caption request diagnostics，默认不勾选；运行时默认关闭，内存有界且15分钟到期，提供查看/复制/清空。只观察字幕请求，严禁记录原URL/视频ID/凭证/正文/异常文本；不自动修复、重试、发送网络请求或修改现有字幕设置。使用官方add-on偏好声明协议，需要官方Captions和1.42.0+设置支持。仅做针对性验证，手机效果单独验收。详见docs/CAPTION-DIAGNOSTICS.md。

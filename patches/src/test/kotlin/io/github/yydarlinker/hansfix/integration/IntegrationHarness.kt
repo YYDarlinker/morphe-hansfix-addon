@@ -186,8 +186,13 @@ private fun execute(args: Arguments, audit: Audit) {
             }
             val addon = addonBundle.singleOrNull { it.name == ADDON } ?: throw Gate("FAILED_ADDON_SELECTION")
             val memory = addonBundle.singleOrNull { it.name == "Remember subtitle language" }
-            // Independence is the HansFix contract. Memory is verified in the official combination.
-            val addons = if (args.mode == "addon-only") listOf(addon) else listOfNotNull(addon, memory)
+            val diagnostics = addonBundle.singleOrNull { it.name == "Caption request diagnostics" }
+            // Independence is the HansFix contract. Optional features are tested only in combined modes.
+            val addons = when (args.mode) {
+                "addon-only" -> listOf(addon)
+                "official-only", "official-defaults" -> emptyList()
+                else -> listOfNotNull(addon, memory, diagnostics)
+            }
             val scratch = Files.createTempDirectory(args.output.toPath(), "session-").toFile()
             // Patcher deletes its temporaryFilesPath during initialization. It only receives a
             // fresh child of the newly-created scratch directory, never caller-supplied input paths.

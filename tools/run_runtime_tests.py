@@ -24,6 +24,11 @@ def main():
             raise RuntimeError(f"JDK 21 required: {executable}")
     sources = [REPO / "extensions/extension/src/main/java/io/github/yydarlinker/hansfix/HansFixRuntime.java"]
     sources.extend(sorted((REPO / "tests/java").rglob("*.java")))
+    # Pure diagnostics core only; the Android facade boundary test is an opt-in SDK test.
+    sources.extend([
+        REPO / "extensions/extension/src/main/java/io/github/yydarlinker/hansfix/diagnostics/DiagnosticStore.java",
+        REPO / "tests/diagnostics/DiagnosticStoreTest.java",
+    ])
     if len(sources) < 2:
         raise RuntimeError("No Java runtime test sources found")
     output = REPO / "build/runtime-tests"
@@ -34,6 +39,8 @@ def main():
                     "-classpath", classes, "-d", classes, *map(str, sources)], check=True)
     subprocess.run([str(java), "-ea", "-cp", classes,
                     "io.github.yydarlinker.hansfix.HansFixRuntimeTest"], check=True)
+    subprocess.run([str(java), "-ea", "-cp", classes,
+                    "io.github.yydarlinker.hansfix.diagnostics.DiagnosticStoreTest"], check=True)
     return 0
 
 

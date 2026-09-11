@@ -6,18 +6,20 @@
 
 ## 功能
 
-同一源提供两个独立补丁：
+同一源提供三个独立补丁：
 
 - **HansFix - Simplified Chinese captions**：独立将繁体自动翻译兼容入口的请求改为简体，统一 CC 菜单、设置内字幕菜单和已选语言摘要的显示。无需开启官方字幕 Cookie；原生繁体字幕不受影响。
 - **Remember subtitle language**：全局记住最后手动选择的字幕语言，新视频自动打开字幕，包括可用的自动翻译。选中补丁后默认生效，没有运行时设置开关，不按频道区分。手动关闭 CC 只影响当前视频，不清除已记住语言。首次使用或目标语言缺失时回退到原生默认字幕。
 
-两个补丁可以一起选择，扩展只合并一次。字幕记忆保存语言代码，不跨视频复用 URL、轨道对象、签名参数或 Cookie。
+- **Caption request diagnostics**：可单独勾选的字幕请求诊断。安装后默认停止记录；在 Morphe 设置根页的“字幕诊断”中手动开始、查看、复制或清空。最多80条、15分钟，仅内存，不保存URL、视频标识、Cookie/Token值或字幕正文。不修复、不重试字幕。需要同次选择官方 Captions（官方设置 add-on 协议1.42.0+）。详见 [手机诊断步骤与边界](docs/CAPTION-DIAGNOSTICS.md)。
+
+三个补丁可以一起选择，扩展只合并一次。字幕记忆保存语言代码，不跨视频复用 URL、轨道对象、签名参数或 Cookie。
 
 ## 使用
 
 1. 保留官方 Morphe 补丁源；本轮目标为 **Manager 1.29.0 / Patcher 1.12.0 / 官方补丁 1.42.0 / YouTube 21.13.164（1561063732）**。
 2. 继续使用原开发源：`https://raw.githubusercontent.com/YYDarlinker/morphe-hansfix-addon/dev/patches-bundle.json`，开启该源预发布并刷新。不要使用旧 v1.0.0-dev.1 测试新版 APK；它限制 21.07.247。
-3. 选未打补丁的 Google YouTube 原 APK，进入专家模式。本源选择所需的两个补丁；使用字幕记忆时仍须同时选择官方 **Captions**。HansFix 自身不再要求官方 Captions 才能应用。
+3. 选未打补丁的 Google YouTube 原 APK，进入专家模式。本源选择所需的补丁；使用字幕记忆时仍须同时选择官方 **Captions**。HansFix 自身不再要求官方 Captions 才能应用。
 4. 同一次改包后由 Manager 本地签名安装。覆盖更新沿用自己的原签名密钥，不必卸载或清数据。
 5. HansFix 选中后直接生效，官方字幕 Cookie 开启、关闭或未配置均不控制它。在视频字幕菜单手动选择一次所需语言，后续视频由记忆补丁自动选择。更新前的 dev.2 及更早版本仍有 Cookie 开关依赖，请刷新源后再构建。
 
