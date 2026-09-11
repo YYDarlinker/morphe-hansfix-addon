@@ -1,3 +1,9 @@
+## [1.0.0-dev.4](https://github.com/YYDarlinker/morphe-hansfix-addon/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-09-11)
+
+### ✨ New Features
+
+* add opt-in private caption request diagnostics ([af5eafd](https://github.com/YYDarlinker/morphe-hansfix-addon/commit/af5eafd68baee4cd206f985d5e9b2bed099c3ee1))
+
 ## [1.0.0-dev.3](https://github.com/YYDarlinker/morphe-hansfix-addon/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2026-09-11)
 
 ### 🐛 Bug Fixes

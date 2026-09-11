@@ -1,7 +1,39 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.0-dev.3",
+  "version": "1.0.0-dev.4",
   "patches": [
+    {
+      "name": "Caption request diagnostics",
+      "description": "Opt-in, memory-only caption request diagnostics with a Morphe settings viewer/copy/clear entry. Does not fix, retry, or change captions. Requires official Captions and settings add-on support (1.42.0+). Structure checked on YouTube 21.13.164; phone verification pending.",
+      "default": false,
+      "dependencies": [
+        "BytecodePatch",
+        "ResourcePatch"
+      ],
+      "compatiblePackages": [
+        {
+          "packageName": "com.google.android.youtube",
+          "name": "YouTube",
+          "description": null,
+          "apkFileType": "APK_REQUIRED",
+          "appIconColor": "#FF0033",
+          "signatures": [
+            "5aad2bee6db95d17e05a08d7d1e64c10a1511879154483916b6ae6c7fd9cb0c6",
+            "3d7a1223019aa39d9ea0e3436ab7c0896bfb4fb679f4de5fe7c23f326c8f994a"
+          ],
+          "targets": [
+            {
+              "version": null,
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": 28,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
     {
       "name": "HansFix - Simplified Chinese captions",
       "description": "Maps Traditional auto-translation to Simplified across caption menus. Independent of the official caption Cookie setting; compatible with official patches. Structure-checked, without an exact version restriction.",
