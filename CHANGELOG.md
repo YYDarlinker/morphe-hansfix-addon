@@ -1,3 +1,9 @@
+## [1.0.0-dev.6](https://github.com/YYDarlinker/morphe-hansfix-addon/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2026-09-13)
+
+### ✨ New Features
+
+* add caption web UA experiment patch ([#2](https://github.com/YYDarlinker/morphe-hansfix-addon/issues/2)) ([7e24b05](https://github.com/YYDarlinker/morphe-hansfix-addon/commit/7e24b05c5669342f188ba4c027f578572e3d0680))
+
 ## [1.0.0-dev.5](https://github.com/YYDarlinker/morphe-hansfix-addon/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2026-09-11)
 
 ### 🐛 Bug Fixes
