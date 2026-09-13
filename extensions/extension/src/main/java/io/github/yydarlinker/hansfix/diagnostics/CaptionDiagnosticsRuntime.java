@@ -2,6 +2,7 @@ package io.github.yydarlinker.hansfix.diagnostics;
 
 import android.os.Handler;
 import android.os.Looper;
+import io.github.yydarlinker.hansfix.captionauth.CaptionAuthRuntime;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -91,7 +92,12 @@ public final class CaptionDiagnosticsRuntime {
         try { if (expiryHandler != null) expiryHandler.removeCallbacks(expiry); } catch (Throwable ignored) { }
     }
     static String report() {
-        try { return Holder.STORE.report(); }
-        catch (Throwable ignored) { return "字幕诊断暂不可用（未保存异常信息）。"; }
+        try {
+            return Holder.STORE.report()
+                    + "\ncaption_auth_state=" + CaptionAuthRuntime.diagnosticState()
+                    + " (global latest attempt; no credential value retained)\n";
+        } catch (Throwable ignored) {
+            return "字幕诊断暂不可用（未保存异常信息）。";
+        }
     }
 }
