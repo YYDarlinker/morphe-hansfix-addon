@@ -9,11 +9,17 @@ import java.security.MessageDigest;
  */
 public final class CaptionAuthRuntime {
     private static final String ORIGIN = "https://www.youtube.com";
+    private static volatile String diagnosticState = "not_used";
 
     private CaptionAuthRuntime() {}
 
     public static String origin() {
         return ORIGIN;
+    }
+
+    /** Non-secret process-local research state for the diagnostics report. */
+    public static String diagnosticState() {
+        return diagnosticState;
     }
 
     /**
@@ -22,8 +28,11 @@ public final class CaptionAuthRuntime {
      */
     public static String authorizationForCookies(String cookieHeader) {
         try {
-            return authorizationForCookiesAt(cookieHeader, System.currentTimeMillis() / 1000L);
+            String value = authorizationForCookiesAt(cookieHeader, System.currentTimeMillis() / 1000L);
+            diagnosticState = value == null ? "missing_auth_cookie" : "authorization_ready";
+            return value;
         } catch (Throwable ignored) {
+            diagnosticState = "error";
             return null;
         }
     }

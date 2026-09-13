@@ -47,25 +47,34 @@ The intermittent Morphe behavior may be caused by translated Timed Text acceptin
 
 This hypothesis is narrower and cheaper to test than immediately porting a BotGuard / PO-token generator.
 
-## Experimental patch
+## Research-branch behavior
 
-Patch name:
+No extra publishable patch root is added. The existing `Caption request diagnostics` patch owns the experiment on `research/caption-429-auth` only.
 
-`Caption authenticated cookies (experimental)`
+With Morphe's normal anonymous caption Cookie, behavior remains diagnostic-only because neither `SAPISID` nor `__Secure-3PAPISID` exists and no Authorization header can be generated.
 
-Behavior:
+If the already-configured Morphe caption Cookie contains a logged-in YouTube identity, translated URLs containing `tlang=` additionally receive:
 
-- default off;
-- requires Morphe's official Captions patch;
-- affects only caption URLs containing `tlang=`;
-- reuses the Cookie string already configured in Morphe;
-- if that string contains `SAPISID`, or falls back to `__Secure-3PAPISID`, computes:
+- `Authorization: SAPISIDHASH ...`
+- `X-Origin: https://www.youtube.com`
+- `DNT: 1`
 
-  `SAPISIDHASH <unix_seconds>_<sha1(unix_seconds + " " + sapisid + " https://www.youtube.com")>`
+The hash is derived as:
 
-- adds `Authorization`, `X-Origin`, and `DNT` to the same request-local Cronet builder;
-- does not persist, log, export, hash-for-reporting, or otherwise retain cookie/token values;
-- if the auth cookie is absent or any computation fails, it performs no auth modification and the official Morphe path continues.
+`SAPISIDHASH <unix_seconds>_<sha1(unix_seconds + " " + sapisid + " https://www.youtube.com")>`
+
+The hook is request-local: the exact URL and Cronet builder from the same `newUrlRequestBuilder` call are passed together. It does not introduce a new global URL/request association.
+
+Any missing auth cookie or runtime failure is fail-closed and the ordinary Morphe caption path continues.
+
+The diagnostic report adds only a non-secret global state line:
+
+- `caption_auth_state=not_used`
+- `caption_auth_state=missing_auth_cookie`
+- `caption_auth_state=authorization_ready`
+- `caption_auth_state=error`
+
+No credential or authorization value is retained.
 
 ## Security warning
 
@@ -84,9 +93,11 @@ The diagnostics patch intentionally does not store Cookie or Authorization value
 
 ### Baseline A — anonymous Morphe caption cookies
 
-1. Build with official Captions + Caption diagnostics; leave the experimental auth patch off.
+1. Build the research branch with official Captions + `Caption request diagnostics`.
 2. Enable `Set caption cookies` and use Morphe's normal `Get caption cookies` result.
-3. Reproduce normal switching behavior and capture the 200/429 sequence.
+3. Start diagnostics and reproduce the normal video-switching pattern.
+4. Confirm the report says `caption_auth_state=missing_auth_cookie` after translated requests.
+5. Capture the 200/429 sequence.
 
 ### Experiment B — authenticated browser cookies
 
@@ -94,8 +105,9 @@ The diagnostics patch intentionally does not store Cookie or Authorization value
 2. Paste that full Cookie string into Morphe's existing `Caption cookies` text preference.
 3. Keep `Set caption cookies` enabled.
 4. Restart YouTube because current Morphe caches the configured caption Cookie in a `static final` field at process initialization.
-5. Build/select `Caption authenticated cookies (experimental)` together with official Captions and Caption diagnostics.
-6. Repeat the same switching pattern for substantially longer than the baseline failure interval.
+5. Use the same research build with official Captions + `Caption request diagnostics`.
+6. Start diagnostics and confirm `caption_auth_state=authorization_ready` after a translated request.
+7. Repeat the same switching pattern for substantially longer than the baseline failure interval.
 
 Primary endpoint:
 
@@ -105,7 +117,7 @@ Secondary endpoints:
 
 - whether original-language captions remain unaffected;
 - whether any new non-429 error appears;
-- whether behavior changes after the browser-auth session ages.
+- whether behavior changes as the browser-auth session ages.
 
 ## Decision rule
 

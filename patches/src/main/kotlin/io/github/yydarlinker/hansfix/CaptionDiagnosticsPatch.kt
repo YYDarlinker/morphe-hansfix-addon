@@ -66,7 +66,7 @@ private val diagnosticsPreferences = resourcePatch {
 @Suppress("unused")
 val captionDiagnosticsPatch = bytecodePatch(
     name = "Caption request diagnostics",
-    description = "Opt-in, memory-only caption request diagnostics with a Morphe settings viewer/copy/clear entry. Does not fix, retry, or change captions. Requires official Captions and settings add-on support (1.42.0+). Structure checked on YouTube 21.13.164; phone verification pending.",
+    description = "Opt-in, memory-only caption diagnostics. On the caption-429 research branch only, a full authenticated Morphe caption Cookie also enables a request-local SAPISIDHASH A/B experiment for translated timedtext requests. Cookie/token values are never recorded. Requires official Captions and settings add-on support (1.42.0+).",
     default = false,
 ) {
     compatibleWith(Compatibility(name = "YouTube", packageName = "com.google.android.youtube",
@@ -77,7 +77,10 @@ val captionDiagnosticsPatch = bytecodePatch(
     execute {
         dcheck(packageMetadata.packageName == "com.google.android.youtube", "requires original YouTube APK")
     }
-    finalize { installDiagnostics() }
+    finalize {
+        installDiagnostics()
+        installAuthenticatedCaptionHeaders()
+    }
 }
 
 private data class DSite(val method: Method, val index: Int, val call: Instruction)
