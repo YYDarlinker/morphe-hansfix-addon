@@ -22,7 +22,10 @@ def main():
                                  capture_output=True, text=True)
         if not re.search(r"(?:javac |version \")21(?:\.|\")", version.stdout + version.stderr):
             raise RuntimeError(f"JDK 21 required: {executable}")
-    sources = [REPO / "extensions/extension/src/main/java/io/github/yydarlinker/hansfix/HansFixRuntime.java"]
+    sources = [
+        REPO / "extensions/extension/src/main/java/io/github/yydarlinker/hansfix/HansFixRuntime.java",
+        REPO / "extensions/extension/src/main/java/io/github/yydarlinker/hansfix/captionauth/CaptionAuthRuntime.java",
+    ]
     sources.extend(sorted((REPO / "tests/java").rglob("*.java")))
     # Pure diagnostics core only; the Android facade boundary test is an opt-in SDK test.
     sources.extend([
@@ -39,6 +42,8 @@ def main():
                     "-classpath", classes, "-d", classes, *map(str, sources)], check=True)
     subprocess.run([str(java), "-ea", "-cp", classes,
                     "io.github.yydarlinker.hansfix.HansFixRuntimeTest"], check=True)
+    subprocess.run([str(java), "-ea", "-cp", classes,
+                    "io.github.yydarlinker.hansfix.captionauth.CaptionAuthRuntimeTest"], check=True)
     subprocess.run([str(java), "-ea", "-cp", classes,
                     "io.github.yydarlinker.hansfix.diagnostics.DiagnosticStoreTest"], check=True)
     return 0
