@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = 'YYDarlinker/morphe-hansfix-addon'
 PATCH_NAME = 'HansFix - Simplified Chinese captions'
 DIAGNOSTICS_PATCH_NAME = 'Caption request diagnostics'
+UA_EXPERIMENT_PATCH_NAME = 'Caption Web UA experiment'
 NAMESPACE = 'io.github.yydarlinker.hansfix'
 FORBIDDEN_EXTENSIONS = {
     '.apk', '.apkm', '.apks', '.xapk', '.aab', '.dex', '.smali', '.mpp', '.mpe',
@@ -107,15 +108,15 @@ def patch_list_issues(data):
         if not isinstance(value, dict) or not valid_version(value.get('version')):
             return ['invalid-patch-list-version']
         patches = value.get('patches')
-        if not isinstance(patches, list) or not 1 <= len(patches) <= 3:
+        if not isinstance(patches, list) or not 1 <= len(patches) <= 4:
             return ['unexpected-generated-patch-count']
-        allowed = {PATCH_NAME, 'Remember subtitle language', DIAGNOSTICS_PATCH_NAME}
+        allowed = {PATCH_NAME, 'Remember subtitle language', DIAGNOSTICS_PATCH_NAME, UA_EXPERIMENT_PATCH_NAME}
         names = set()
         for patch in patches:
             if not isinstance(patch, dict) or patch.get('name') not in allowed or patch['name'] in names:
                 return ['unexpected-generated-patch']
             names.add(patch['name'])
-            if patch['name'] == DIAGNOSTICS_PATCH_NAME and patch.get('options', []) != []:
+            if patch['name'] in {DIAGNOSTICS_PATCH_NAME, UA_EXPERIMENT_PATCH_NAME} and patch.get('options', []) != []:
                 return ['unexpected-generated-patch-options']
             if patch.get('default') is not (patch['name'] == 'Remember subtitle language'):
                 return ['unexpected-generated-patch-default']
@@ -192,6 +193,7 @@ def source_contract(files):
     issues = []
     registrations = 0
     diagnostics_registrations = 0
+    ua_experiment_registrations = 0
     runtime_count = 0
     for name, data in files.items():
         text = data.decode('utf-8-sig', errors='replace')
@@ -201,6 +203,8 @@ def source_contract(files):
             registrations += len(re.findall(r'\b(?:bytecodePatch|resourcePatch|rawResourcePatch)\s*\(', code))
             diagnostics_registrations += len(re.findall(
                 r'\bbytecodePatch\s*\(\s*name\s*=\s*"' + re.escape(DIAGNOSTICS_PATCH_NAME) + r'"', code))
+            ua_experiment_registrations += len(re.findall(
+                r'\bbytecodePatch\s*\(\s*name\s*=\s*"' + re.escape(UA_EXPERIMENT_PATCH_NAME) + r'"', code))
         if name.startswith('extensions/') and '/src/main/' in name and name.endswith(('.java', '.kt')):
             runtime_count += 1
             package = re.search(r'^\s*package\s+([\w.]+)\s*;', text, flags=re.M)
@@ -208,8 +212,9 @@ def source_contract(files):
                 package[1] == NAMESPACE or package[1].startswith(NAMESPACE + '.')
             ):
                 issues.append((name, 'foreign-or-non-java-runtime-source'))
-    # Permit only the optional named diagnostics root, not an arbitrary fourth patch.
-    if diagnostics_registrations not in (0, 1) or registrations != 3 + diagnostics_registrations:
+    # Permit only the two reviewed optional roots, not arbitrary extra patches.
+    if (diagnostics_registrations not in (0, 1) or ua_experiment_registrations not in (0, 1) or
+            registrations != 3 + diagnostics_registrations + ua_experiment_registrations):
         issues.append(('<production>', 'expected-two-features-and-shared-extension'))
     if runtime_count == 0:
         issues.append(('<production>', 'missing-addon-runtime-source'))
