@@ -23,6 +23,10 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - name: Research compile patch bundle
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :patches:buildAndroid --no-daemon
       - name: Inspect exact source index
         run: python tools/check_publish_safety.py
       - name: Python safety and production contracts
